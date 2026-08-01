@@ -1,0 +1,891 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Chat" />
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+<title>Chat</title>
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%23007AFF'/><path d='M18 22c0-2.2 1.8-4 4-4h20c2.2 0 4 1.8 4 4v14c0 2.2-1.8 4-4 4H30l-6 6v-6h-2c-2.2 0-4-1.8-4-4V22z' fill='white'/></svg>" />
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-elev: #f2f2f7;
+    --border: #e5e5ea;
+    --border-strong: #d1d1d6;
+    --text: #000000;
+    --text-secondary: #3c3c43;
+    --text-muted: #8e8e93;
+    --text-faint: #b0b0b8;
+    --blue: #007aff;
+    --blue-pressed: #0064d1;
+    --user-bubble: #007aff;
+    --user-text: #ffffff;
+    --assistant-bubble: #e9e9eb;
+    --assistant-text: #000000;
+    --header-bg: rgba(255,255,255,0.85);
+    --composer-bg: rgba(255,255,255,0.94);
+    --pill-bg: #ffffff;
+    --pill-shadow: 0 1px 3px rgba(0,0,0,0.10), 0 6px 20px rgba(0,0,0,0.06);
+    --danger: #ff3b30;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #000000;
+      --bg-elev: #1c1c1e;
+      --border: #2c2c2e;
+      --border-strong: #38383a;
+      --text: #ffffff;
+      --text-secondary: #e5e5ea;
+      --text-muted: #8e8e93;
+      --text-faint: #48484a;
+      --blue: #0a84ff;
+      --blue-pressed: #0066cc;
+      --user-bubble: #0a84ff;
+      --user-text: #ffffff;
+      --assistant-bubble: #26262a;
+      --assistant-text: #ffffff;
+      --header-bg: rgba(0,0,0,0.72);
+      --composer-bg: rgba(0,0,0,0.94);
+      --pill-bg: #2c2c2e;
+      --pill-shadow: 0 1px 3px rgba(0,0,0,0.5), 0 6px 20px rgba(0,0,0,0.4);
+      --danger: #ff453a;
+      color-scheme: dark;
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family:
+      -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+      "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif;
+    font-size: 17px;
+    line-height: 1.35;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overflow: hidden;
+  }
+  button { font: inherit; color: inherit; }
+
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    max-width: 520px;
+    margin: 0 auto;
+    background: var(--bg);
+    position: relative;
+  }
+
+  /* ---------- Header ---------- */
+  header {
+    position: relative;
+    padding: max(env(safe-area-inset-top), 8px) 12px 10px;
+    background: var(--header-bg);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid var(--border);
+    z-index: 5;
+  }
+  .header-inner {
+    display: grid;
+    grid-template-columns: 70px 1fr 70px;
+    align-items: start;
+    min-height: 68px;
+  }
+  #new-chat-btn {
+    background: none;
+    border: 0;
+    color: var(--blue);
+    font-size: 16px;
+    padding: 8px 0;
+    text-align: right;
+    grid-column: 3;
+    grid-row: 1;
+    cursor: pointer;
+    align-self: center;
+    justify-self: end;
+  }
+  #new-chat-btn:disabled { color: var(--text-faint); cursor: default; }
+
+  .header-identity {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .header-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #d1d1d6, #a9a9b0);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 600;
+    overflow: hidden;
+    margin-bottom: 2px;
+  }
+  .header-avatar img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  .header-name {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--text);
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    letter-spacing: -0.01em;
+  }
+  .header-name svg { width: 10px; height: 10px; color: var(--text-muted); }
+  .header-role {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.2;
+  }
+
+  /* ---------- Message list ---------- */
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding: 12px 12px 6px;
+    display: flex;
+    flex-direction: column;
+  }
+  #messages > .spacer { flex: 1; }
+
+  .time-sep {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 10px 0 4px;
+    letter-spacing: 0.02em;
+  }
+  .time-sep b {
+    color: var(--text-secondary);
+    font-weight: 600;
+    margin-right: 4px;
+  }
+
+  .row {
+    display: flex;
+    width: 100%;
+    margin-top: 2px;
+  }
+  .row.gap { margin-top: 10px; }
+  .row.user { justify-content: flex-end; }
+  .row.assistant { justify-content: flex-start; }
+
+  .bubble {
+    max-width: 78%;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 17px;
+    line-height: 1.32;
+    letter-spacing: -0.01em;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+  }
+  .bubble.user {
+    background: var(--user-bubble);
+    color: var(--user-text);
+    border-bottom-right-radius: 6px;
+  }
+  .bubble.assistant {
+    background: var(--assistant-bubble);
+    color: var(--assistant-text);
+    border-bottom-left-radius: 6px;
+  }
+
+  .stop-row {
+    display: flex;
+    justify-content: center;
+    margin: 10px 0 2px;
+  }
+  .stop-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--pill-bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    box-shadow: var(--pill-shadow);
+    border-radius: 999px;
+    padding: 8px 14px 8px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .stop-pill svg { width: 12px; height: 12px; }
+
+  .typing {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 14px;
+    background: var(--assistant-bubble);
+    color: var(--assistant-text);
+    border-radius: 20px;
+    border-bottom-left-radius: 6px;
+  }
+  .typing .dot {
+    width: 7px; height: 7px; border-radius: 999px;
+    background: currentColor;
+    opacity: 0.35;
+    animation: dot 1.2s infinite ease-in-out;
+  }
+  .typing .dot:nth-child(2) { animation-delay: 0.15s; }
+  .typing .dot:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes dot {
+    0%,60%,100% { opacity: 0.25; transform: translateY(0); }
+    30% { opacity: 0.9; transform: translateY(-2px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .typing .dot { animation: none; opacity: 0.6; }
+  }
+
+  .empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--text-muted);
+    padding: 40px 24px;
+    gap: 6px;
+  }
+  .empty p { margin: 0; font-size: 14px; }
+  .empty p.sub { color: var(--text-faint); font-size: 13px; }
+
+  .err {
+    margin: 6px 12px 4px;
+    background: color-mix(in srgb, var(--danger) 10%, var(--bg));
+    color: var(--danger);
+    border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .err button { background: none; border: 0; color: inherit; cursor: pointer; font-size: 14px; }
+
+  /* ---------- Composer ---------- */
+  footer {
+    padding: 6px 10px calc(max(env(safe-area-inset-bottom), 8px) + 4px);
+    background: var(--composer-bg);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-top: 1px solid var(--border);
+    z-index: 5;
+  }
+  .composer-pill {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 22px;
+    padding: 3px 4px 3px 4px;
+    min-height: 40px;
+    max-height: 180px;
+  }
+  .composer-plus {
+    width: 32px; height: 32px;
+    flex-shrink: 0;
+    border-radius: 999px;
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    align-self: flex-end;
+    margin: 2px 0;
+  }
+  .composer-plus svg { width: 22px; height: 22px; }
+  .composer-input {
+    flex: 1;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 17px;
+    line-height: 1.35;
+    resize: none;
+    padding: 8px 4px 6px;
+    max-height: 160px;
+    min-height: 24px;
+    font-family: inherit;
+  }
+  .composer-input::placeholder { color: var(--text-faint); }
+  .composer-send {
+    width: 30px; height: 30px;
+    flex-shrink: 0;
+    align-self: flex-end;
+    margin: 3px 3px 3px 0;
+    border: 0;
+    border-radius: 999px;
+    background: var(--blue);
+    color: #fff;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.12s ease, background 0.12s ease;
+  }
+  .composer-send.visible { display: inline-flex; }
+  .composer-send:active { transform: scale(0.92); background: var(--blue-pressed); }
+  .composer-send svg { width: 16px; height: 16px; }
+
+  /* ---------- Settings modal ---------- */
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 20;
+  }
+  .backdrop.open { display: flex; }
+  @media (min-width: 600px) {
+    .backdrop { align-items: center; padding: 24px; }
+  }
+  .sheet {
+    width: 100%;
+    max-width: 520px;
+    background: var(--bg);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    border: 1px solid var(--border);
+    border-bottom: 0;
+    padding-bottom: max(env(safe-area-inset-bottom), 16px);
+    max-height: 92dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  @media (min-width: 600px) {
+    .sheet { border-radius: 20px; border-bottom: 1px solid var(--border); }
+  }
+  .sheet-handle {
+    width: 40px; height: 4px;
+    background: var(--text-faint);
+    opacity: 0.5;
+    border-radius: 999px;
+    margin: 8px auto 0;
+  }
+  .sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sheet-head h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .sheet-link {
+    background: none;
+    border: 0;
+    color: var(--blue);
+    font-size: 15px;
+    cursor: pointer;
+    padding: 6px 4px;
+  }
+  .sheet-link.bold { font-weight: 600; }
+  .sheet-body {
+    padding: 14px 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 13px; font-weight: 600; color: var(--text); }
+  .field .hint { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+  .input, .textarea, .select {
+    width: 100%;
+    background: var(--bg-elev);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 15px;
+    font-family: inherit;
+    outline: none;
+    line-height: 1.4;
+  }
+  .textarea { resize: vertical; min-height: 100px; }
+  .input:focus, .textarea:focus, .select:focus { border-color: var(--blue); }
+  .row-split { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .link-danger { color: var(--danger); font-size: 13px; background: none; border: 0; padding: 6px 0; cursor: pointer; }
+</style>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <div class="header-inner">
+        <div class="header-identity" id="header-identity" role="button" tabindex="0" aria-label="설정 열기">
+          <div class="header-avatar" id="header-avatar"></div>
+          <div class="header-name" id="header-name-wrap">
+            <span id="header-name"></span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="header-role" id="header-role"></div>
+        </div>
+        <button id="new-chat-btn" type="button">새 대화</button>
+      </div>
+    </header>
+
+    <main id="messages" aria-live="polite"></main>
+
+    <div id="err-slot"></div>
+
+    <footer>
+      <form class="composer-pill" id="composer" autocomplete="off">
+        <button type="button" class="composer-plus" aria-label="추가" tabindex="-1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+        <textarea id="input" class="composer-input" rows="1" placeholder="메시지" spellcheck="false"></textarea>
+        <button type="submit" class="composer-send" id="send-btn" aria-label="보내기">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+        </button>
+      </form>
+    </footer>
+  </div>
+
+  <div class="backdrop" id="settings-backdrop">
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <button type="button" class="sheet-link" id="settings-cancel">취소</button>
+        <h2 id="settings-title">설정</h2>
+        <button type="button" class="sheet-link bold" id="settings-save">저장</button>
+      </div>
+      <div class="sheet-body">
+        <div class="field">
+          <label for="s-apikey">Anthropic API 키</label>
+          <input type="password" class="input" id="s-apikey" placeholder="sk-ant-..." autocomplete="off" />
+          <span class="hint">브라우저에만 저장돼요. 서버로 안 보내요. <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none">키 만들러 가기 ↗</a></span>
+        </div>
+        <div class="field">
+          <label for="s-name">이름</label>
+          <input type="text" class="input" id="s-name" />
+        </div>
+        <div class="field">
+          <label for="s-role">부제</label>
+          <input type="text" class="input" id="s-role" placeholder="예: 비서실장" />
+        </div>
+        <div class="field">
+          <label for="s-avatar">프로필 이미지 URL</label>
+          <input type="url" class="input" id="s-avatar" placeholder="https://... (비우면 이름 첫 글자)" />
+        </div>
+        <div class="field">
+          <label for="s-model">모델</label>
+          <select class="select" id="s-model">
+            <option value="claude-sonnet-5">Sonnet 5 (기본)</option>
+            <option value="claude-opus-5">Opus 5</option>
+            <option value="claude-fable-5">Fable 5</option>
+            <option value="claude-haiku-4-5-20251001">Haiku 4.5</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="s-system">시스템 프롬프트</label>
+          <textarea class="textarea" id="s-system" rows="6" placeholder="이 인물의 성격·말투·역할을 서술하세요."></textarea>
+          <span class="hint">예: "너는 페이퍼로지의 비서실장 마리코야. 로지님을 '로지님'이라 부르고 존댓말을 쓰되 담백하게 응답해."</span>
+        </div>
+        <div class="row-split">
+          <button type="button" class="link-danger" id="wipe-btn">모든 대화 지우기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ---------- Storage & defaults ---------- */
+  const CONFIG_KEY = 'chat.config.v1';
+  const MSGS_KEY = 'chat.messages.v1';
+
+  const DEFAULTS = {
+    apiKey: '',
+    name: '어시스턴트',
+    role: 'Claude',
+    avatarUrl: '',
+    model: 'claude-sonnet-5',
+    systemPrompt:
+      'You are a warm, thoughtful assistant. Reply in the same language the user writes in. Be concise but complete. Skip filler like apologies or restating the question.',
+  };
+
+  const readJSON = (k, fb) => {
+    try {
+      const raw = localStorage.getItem(k);
+      return raw ? JSON.parse(raw) : fb;
+    } catch { return fb; }
+  };
+  const writeJSON = (k, v) => {
+    try { localStorage.setItem(k, JSON.stringify(v)); } catch {}
+  };
+
+  let config = { ...DEFAULTS, ...readJSON(CONFIG_KEY, {}) };
+  let messages = readJSON(MSGS_KEY, []); // [{id, role, text, createdAt}]
+  let generating = false;
+  let abortCtrl = null;
+
+  const persistConfig = () => writeJSON(CONFIG_KEY, config);
+  const persistMessages = () => writeJSON(MSGS_KEY, messages);
+
+  const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+
+  /* ---------- Time formatting (Korean) ---------- */
+  const WEEKDAY_KO = ['일', '월', '화', '수', '목', '금', '토'];
+  function isSameDay(a, b) {
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  }
+  function formatTime(ts) {
+    const d = new Date(ts);
+    const now = new Date();
+    const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+    const h24 = d.getHours();
+    const ampm = h24 < 12 ? '오전' : '오후';
+    const h12 = ((h24 + 11) % 12) + 1;
+    const m = String(d.getMinutes()).padStart(2, '0');
+    const timeStr = `${ampm} ${h12}:${m}`;
+    if (isSameDay(d, now)) return { head: '오늘', time: timeStr };
+    if (isSameDay(d, yesterday)) return { head: '어제', time: timeStr };
+    const diffDays = (now - d) / 86400000;
+    if (diffDays < 7) return { head: WEEKDAY_KO[d.getDay()] + '요일', time: timeStr };
+    return { head: `${d.getMonth() + 1}월 ${d.getDate()}일 (${WEEKDAY_KO[d.getDay()]})`, time: timeStr };
+  }
+
+  /* ---------- DOM refs ---------- */
+  const $ = (sel) => document.querySelector(sel);
+  const messagesEl = $('#messages');
+  const inputEl = $('#input');
+  const sendBtn = $('#send-btn');
+  const newChatBtn = $('#new-chat-btn');
+  const composerForm = $('#composer');
+  const headerAvatar = $('#header-avatar');
+  const headerName = $('#header-name');
+  const headerRole = $('#header-role');
+  const headerIdentity = $('#header-identity');
+  const errSlot = $('#err-slot');
+
+  const settingsBackdrop = $('#settings-backdrop');
+  const sInput = {
+    apikey: $('#s-apikey'),
+    name: $('#s-name'),
+    role: $('#s-role'),
+    avatar: $('#s-avatar'),
+    model: $('#s-model'),
+    system: $('#s-system'),
+  };
+
+  /* ---------- Render ---------- */
+  function renderHeader() {
+    const initial = (config.name || '?').trim().charAt(0);
+    if (config.avatarUrl) {
+      headerAvatar.innerHTML = `<img src="${escapeAttr(config.avatarUrl)}" alt="" />`;
+    } else {
+      headerAvatar.textContent = initial;
+      headerAvatar.style.background = 'linear-gradient(135deg, #b8b8bf, #8e8e93)';
+    }
+    headerName.textContent = config.name || '이름 없음';
+    headerRole.textContent = config.role || '';
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  }
+  function escapeAttr(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function renderMessages() {
+    messagesEl.innerHTML = '';
+    if (messages.length === 0 && !generating) {
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      const cta = config.apiKey
+        ? '아래 입력창에 메시지를 적어 대화를 시작하세요.'
+        : '상단 이름을 눌러 Anthropic API 키를 저장해주세요.';
+      empty.innerHTML = `<p>${escapeHtml(cta)}</p>`;
+      messagesEl.appendChild(empty);
+      return;
+    }
+
+    const spacer = document.createElement('div');
+    spacer.className = 'spacer';
+    messagesEl.appendChild(spacer);
+
+    let lastShownTime = 0;
+    let lastRole = null;
+    for (let i = 0; i < messages.length; i++) {
+      const m = messages[i];
+      // Time separator when >30 min gap or first message
+      if (m.createdAt - lastShownTime > 30 * 60 * 1000) {
+        const t = formatTime(m.createdAt);
+        const sep = document.createElement('div');
+        sep.className = 'time-sep';
+        sep.innerHTML = `<b>${escapeHtml(t.head)}</b>${escapeHtml(t.time)}`;
+        messagesEl.appendChild(sep);
+        lastShownTime = m.createdAt;
+        lastRole = null;
+      }
+
+      const row = document.createElement('div');
+      row.className = 'row ' + m.role + (lastRole !== m.role ? ' gap' : '');
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble ' + m.role;
+      bubble.textContent = m.text;
+      row.appendChild(bubble);
+      messagesEl.appendChild(row);
+      lastRole = m.role;
+    }
+
+    if (generating) {
+      // Stop pill right after user's last message (if last is user)
+      const stopRow = document.createElement('div');
+      stopRow.className = 'stop-row';
+      const pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = 'stop-pill';
+      pill.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg><span>멈춤</span>`;
+      pill.addEventListener('click', stop);
+      stopRow.appendChild(pill);
+      messagesEl.appendChild(stopRow);
+
+      // Typing indicator (as assistant bubble)
+      const typingRow = document.createElement('div');
+      typingRow.className = 'row assistant gap';
+      typingRow.innerHTML = `<div class="typing" aria-label="응답 작성 중"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>`;
+      messagesEl.appendChild(typingRow);
+    }
+
+    // Scroll to bottom
+    requestAnimationFrame(() => {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    });
+  }
+
+  function renderComposer() {
+    const hasText = inputEl.value.trim().length > 0;
+    if (hasText && !generating) {
+      sendBtn.classList.add('visible');
+    } else {
+      sendBtn.classList.remove('visible');
+    }
+    // Auto-resize
+    inputEl.style.height = 'auto';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 160) + 'px';
+
+    newChatBtn.disabled = messages.length === 0 || generating;
+  }
+
+  function showError(msg) {
+    errSlot.innerHTML = '';
+    const div = document.createElement('div');
+    div.className = 'err';
+    div.innerHTML = `<span>${escapeHtml(msg)}</span><button type="button" aria-label="닫기">✕</button>`;
+    div.querySelector('button').addEventListener('click', () => (errSlot.innerHTML = ''));
+    errSlot.appendChild(div);
+  }
+  const clearError = () => (errSlot.innerHTML = '');
+
+  /* ---------- Anthropic API ---------- */
+  async function callAnthropic(msgs, signal) {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': config.apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: config.model,
+        max_tokens: 4096,
+        system: config.systemPrompt,
+        messages: msgs.map((m) => ({ role: m.role, content: m.text })),
+      }),
+      signal,
+    });
+    if (!res.ok) {
+      let detail = '';
+      try {
+        const j = await res.json();
+        detail = j?.error?.message || '';
+      } catch {
+        try { detail = await res.text(); } catch {}
+      }
+      throw new Error(detail || `Anthropic API error (${res.status})`);
+    }
+    const data = await res.json();
+    const text = (data.content || [])
+      .filter((b) => b.type === 'text')
+      .map((b) => b.text || '')
+      .join('');
+    return text;
+  }
+
+  /* ---------- Actions ---------- */
+  async function send() {
+    const text = inputEl.value.trim();
+    if (!text || generating) return;
+    if (!config.apiKey) {
+      openSettings();
+      showError('먼저 Anthropic API 키를 저장해주세요.');
+      return;
+    }
+    clearError();
+
+    const userMsg = { id: uid(), role: 'user', text, createdAt: Date.now() };
+    messages.push(userMsg);
+    persistMessages();
+    inputEl.value = '';
+    generating = true;
+    renderMessages();
+    renderComposer();
+
+    abortCtrl = new AbortController();
+    try {
+      const reply = await callAnthropic(messages, abortCtrl.signal);
+      messages.push({ id: uid(), role: 'assistant', text: reply || '(빈 응답)', createdAt: Date.now() });
+      persistMessages();
+    } catch (e) {
+      if (e.name === 'AbortError') {
+        // canceled — leave as-is
+      } else {
+        showError(e.message || String(e));
+      }
+    } finally {
+      generating = false;
+      abortCtrl = null;
+      renderMessages();
+      renderComposer();
+    }
+  }
+
+  function stop() {
+    if (abortCtrl) abortCtrl.abort();
+  }
+
+  function newChat() {
+    if (generating) return;
+    if (messages.length === 0) return;
+    if (!confirm('대화 기록을 모두 지울까요?')) return;
+    messages = [];
+    persistMessages();
+    clearError();
+    renderMessages();
+    renderComposer();
+  }
+
+  /* ---------- Settings ---------- */
+  function openSettings() {
+    sInput.apikey.value = config.apiKey || '';
+    sInput.name.value = config.name || '';
+    sInput.role.value = config.role || '';
+    sInput.avatar.value = config.avatarUrl || '';
+    sInput.model.value = config.model || DEFAULTS.model;
+    sInput.system.value = config.systemPrompt || '';
+    settingsBackdrop.classList.add('open');
+    setTimeout(() => sInput.apikey.focus(), 60);
+  }
+  function closeSettings() {
+    settingsBackdrop.classList.remove('open');
+  }
+  function saveSettings() {
+    config = {
+      ...config,
+      apiKey: sInput.apikey.value.trim(),
+      name: sInput.name.value.trim() || DEFAULTS.name,
+      role: sInput.role.value.trim(),
+      avatarUrl: sInput.avatar.value.trim(),
+      model: sInput.model.value,
+      systemPrompt: sInput.system.value.trim() || DEFAULTS.systemPrompt,
+    };
+    persistConfig();
+    clearError();
+    closeSettings();
+    renderHeader();
+    renderMessages();
+    renderComposer();
+  }
+  function wipeAll() {
+    if (!confirm('모든 대화 기록을 삭제할까요?')) return;
+    messages = [];
+    persistMessages();
+    closeSettings();
+    renderMessages();
+    renderComposer();
+  }
+
+  /* ---------- Wire up ---------- */
+  composerForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    send();
+  });
+  inputEl.addEventListener('input', renderComposer);
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+      e.preventDefault();
+      send();
+    }
+  });
+  newChatBtn.addEventListener('click', newChat);
+  headerIdentity.addEventListener('click', openSettings);
+  headerIdentity.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSettings(); }
+  });
+  settingsBackdrop.addEventListener('click', (e) => {
+    if (e.target === settingsBackdrop) closeSettings();
+  });
+  $('#settings-cancel').addEventListener('click', closeSettings);
+  $('#settings-save').addEventListener('click', saveSettings);
+  $('#wipe-btn').addEventListener('click', wipeAll);
+
+  /* Initial render */
+  renderHeader();
+  renderMessages();
+  renderComposer();
+
+  /* First-run: nudge to open settings if no API key */
+  if (!config.apiKey) {
+    setTimeout(openSettings, 250);
+  }
+})();
+</script>
+</body>
+</html>
