@@ -1349,7 +1349,7 @@
   let generating = false;
   let activeAssistantId = null;    // id of the assistant message currently streaming
 
-  /* Assistants (화자) data with rules */
+  /* Assistants (화자) data with detailed roles and models */
   const ASSISTANTS = {
     minha: {
       id: 'minha',
@@ -1358,7 +1358,15 @@
       avatar: '/avatars/minha.png',
       color: '#5ae85d',
       bubbleColor: 'var(--user-bubble)',
+      model: 'sonnet',
+      department: '비서실',
       description: '비서실장. 업무 효율화, 자동화, 일정 관리, 시스템 운영을 담당. 실무적이고 실행 지향적.',
+      guidelines: `업무 자동화 및 효율화 전담
+• 일정 관리: 스케줄 조율, 시간 최적화, 캘린더 운영
+• 시스템 설정: 워크플로우 구축, 자동화 구현, 반복 작업 제거
+• 실행 지향: 즉시 실행 가능한 액션플랜 제시
+• 소통 방식: 간결하고 실무적, 구체적 단계별 지침 제시
+• 역할: 태영님의 요청을 가장 효율적으로 해결할 방안 제시`,
       keywords: ['자동화', '일정', '효율', '운영', '관리', '시스템', '설정', '구조', '프로세스']
     },
     chaeyeon: {
@@ -1368,7 +1376,16 @@
       avatar: '/avatars/chaeyeon.png',
       color: '#007aff',
       bubbleColor: '#e9e9eb',
+      model: 'sonnet',
+      department: '감사실',
       description: '감사실장. 업무 감사, 품질 검수, 할루시네이션 감지, 검토를 담당. 비판적이고 검증 지향적.',
+      guidelines: `업무 감사 및 품질 검수 담당
+• 품질 검증: 제안된 방안의 타당성, 실행 가능성 검토
+• 위험 분석: 숨은 리스크, 예상 문제점 사전 파악
+• 할루시네이션 감지: 잘못된 정보나 과장된 주장 지적
+• 합규성 확인: 규정, 정책 준수 여부 검토
+• 소통 방식: 비판적이지만 건설적, 개선안 함께 제시
+• 역할: 민하의 제안에 대해 타당성을 검증하고 보완`,
       keywords: ['검토', '감사', '검증', '품질', '확인', '검사', '점검', '검수', '할루시네이션']
     }
   };
@@ -1397,6 +1414,7 @@
       role: '대표',
       department: '경영진',
       joinDate: '2024-01-01',
+      model: 'N/A',
       guidelines: '전략 수립, 의사결정',
       avatar: null
     },
@@ -1406,7 +1424,14 @@
       role: '감사실장',
       department: '감사',
       joinDate: '2026-08-02',
-      guidelines: '업무 감사, 품질 검수, 할루시네이션 감지',
+      model: 'claude-sonnet',
+      guidelines: `업무 감사 및 품질 검수 담당
+• 품질 검증: 제안된 방안의 타당성, 실행 가능성 검토
+• 위험 분석: 숨은 리스크, 예상 문제점 사전 파악
+• 할루시네이션 감지: 잘못된 정보나 과장된 주장 지적
+• 합규성 확인: 규정, 정책 준수 여부 검토
+• 소통 방식: 비판적이지만 건설적, 개선안 함께 제시
+• 역할: 민하의 제안에 대해 타당성을 검증하고 보완`,
       avatar: '/avatars/chaeyeon.png'
     },
     {
@@ -1415,7 +1440,14 @@
       role: '비서실장',
       department: '비서실',
       joinDate: '2026-08-02',
-      guidelines: '작업 자동화, 일정 관리, 시스템 운영',
+      model: 'claude-sonnet',
+      guidelines: `업무 자동화 및 효율화 전담
+• 일정 관리: 스케줄 조율, 시간 최적화, 캘린더 운영
+• 시스템 설정: 워크플로우 구축, 자동화 구현, 반복 작업 제거
+• 실행 지향: 즉시 실행 가능한 액션플랜 제시
+• 소통 방식: 간결하고 실무적, 구체적 단계별 지침 제시
+• 역할: 태영님의 요청을 가장 효율적으로 해결할 방안 제시
+• 협의: 채연의 검토를 반영해서 최종안 제시`,
       avatar: '/avatars/minha.png'
     }
   ];
@@ -2182,8 +2214,12 @@
         <div class="team-card-role">${member.role}</div>
         <div class="team-card-dept">${member.department}</div>
         <div class="team-card-info">
-          <div>입사: ${member.joinDate}</div>
-          <div style="margin-top: 4px;">${member.guidelines}</div>
+          <div><strong>입사:</strong> ${member.joinDate}</div>
+          <div style="margin-top: 8px;"><strong>AI 모델:</strong> ${member.model}</div>
+          <div style="margin-top: 8px; padding: 8px; background: #f5f5f5; border-radius: 6px; font-size: 12px; line-height: 1.6; white-space: pre-wrap;">
+            <strong>역할 및 지침:</strong>
+${member.guidelines}
+          </div>
         </div>
       </div>
     `).join('');
