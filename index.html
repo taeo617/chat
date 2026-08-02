@@ -1349,6 +1349,27 @@
   let generating = false;
   let activeAssistantId = null;    // id of the assistant message currently streaming
 
+  /* Assistants (화자) data */
+  const ASSISTANTS = {
+    minha: {
+      id: 'minha',
+      name: '민하',
+      role: '비서실장',
+      avatar: '/avatars/minha.png',
+      color: '#5ae85d',
+      bubbleColor: 'var(--user-bubble)'
+    },
+    chaeyeon: {
+      id: 'chaeyeon',
+      name: '채연',
+      role: '감사실장',
+      avatar: '/avatars/chaeyeon.png',
+      color: '#007aff',
+      bubbleColor: '#e9e9eb'
+    }
+  };
+  let activeAssistant = ASSISTANTS.minha;
+
   /* Team members data */
   const TEAM_MEMBERS = [
     {
@@ -1411,6 +1432,81 @@
   const headerName = $('#header-name');
   const headerRole = $('#header-role');
   const headerIdentity = $('#header-identity');
+
+  function updateHeaderForAssistant(assistant) {
+    activeAssistant = assistant;
+    if (assistant.avatar) {
+      headerAvatar.innerHTML = `<img src="${assistant.avatar}" alt="${assistant.name}" />`;
+    } else {
+      headerAvatar.textContent = assistant.name[0];
+    }
+    headerName.textContent = assistant.name;
+    headerRole.textContent = assistant.role;
+    updateComposerForAssistant(assistant);
+  }
+
+  function updateComposerForAssistant(assistant) {
+    const input = $('#input');
+    if (input) {
+      input.style.borderColor = assistant.color;
+      input.style.caretColor = assistant.color;
+      input.placeholder = `${assistant.name}(으)로 메시지 작성...`;
+    }
+  }
+
+  // Add assistant selector
+  const assistantPopover = document.createElement('div');
+  assistantPopover.id = 'assistant-pop';
+  assistantPopover.role = 'menu';
+  assistantPopover.style.cssText = `
+    position: absolute;
+    top: calc(env(safe-area-inset-top) + 60px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 30;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--pill-shadow);
+    padding: 6px;
+    min-width: 200px;
+    display: none;
+  `;
+  Object.values(ASSISTANTS).forEach(asst => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'menu-item';
+    btn.innerHTML = `
+      <div style="width: 32px; height: 32px; border-radius: 999px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0;">
+        ${asst.avatar ? `<img src="${asst.avatar}" alt="${asst.name}" style="width: 100%; height: 100%; object-fit: cover;" />` : `<span style="color: #fff; font-weight: 600;">${asst.name[0]}</span>`}
+      </div>
+      <span>${asst.name} - ${asst.role}</span>
+    `;
+    btn.addEventListener('click', () => {
+      updateHeaderForAssistant(asst);
+      assistantPopover.classList.remove('open');
+    });
+    assistantPopover.appendChild(btn);
+  });
+  assistantPopover.classList.add = function(className) {
+    if (className === 'open') this.style.display = 'block';
+    return this;
+  };
+  assistantPopover.classList.remove = function(className) {
+    if (className === 'open') this.style.display = 'none';
+    return this;
+  };
+  document.querySelector('header').appendChild(assistantPopover);
+
+  headerIdentity.addEventListener('click', (e) => {
+    e.stopPropagation();
+    assistantPopover.style.display = assistantPopover.style.display === 'none' ? 'block' : 'none';
+  });
+  document.addEventListener('click', (e) => {
+    if (!assistantPopover.contains(e.target) && e.target !== headerIdentity) {
+      assistantPopover.style.display = 'none';
+    }
+  });
   const errSlot = $('#err-slot');
   const settingsBackdrop = $('#settings-backdrop');
   const serverDot = $('#server-dot');
@@ -2354,6 +2450,7 @@
 
   hydrate();
   connectEvents();
+  updateHeaderForAssistant(activeAssistant);
   refreshWeather();
 
   /* Reconnect SSE when page becomes visible again (mobile Safari) */
