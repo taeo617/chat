@@ -1377,6 +1377,14 @@
   function selectAssistantByContext(userMessage) {
     const messageLower = userMessage.toLowerCase();
 
+    // Check for explicit name mentions (direct calls have priority)
+    if (messageLower.includes('민하') || messageLower.includes('비서실장')) {
+      return ASSISTANTS.minha;
+    }
+    if (messageLower.includes('채연') || messageLower.includes('감사실장')) {
+      return ASSISTANTS.chaeyeon;
+    }
+
     // Count keyword matches for each assistant
     const minhaScore = ASSISTANTS.minha.keywords.filter(kw => messageLower.includes(kw)).length;
     const chaeyeonScore = ASSISTANTS.chaeyeon.keywords.filter(kw => messageLower.includes(kw)).length;
