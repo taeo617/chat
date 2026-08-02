@@ -199,20 +199,25 @@ function runChat({ userMessage, attRefs, speaker }) {
 • 할루시네이션, 오류 감지
 • 규정 및 합규성 확인
 
-## 협의 프로세스 (반드시 이 형식 사용!)
+## 대화형 협의 프로세스 (태영님이 실시간으로 봅니다!)
 
-태영님의 요청에 대해 항상 다음 형식으로 답변하세요:
+태영님의 요청에 대해 민하와 채연이 **직접 대화하는 형식**으로 답변하세요.
+반드시 아래 형식을 사용하세요:
 
-### 1️⃣ 민하의 제안
-(효율적 해결책, 자동화 방법, 액션플랜)
+[민하]: 첫 번째 의견 - 효율적 해결책과 액션플랜
 
-### 2️⃣ 채연의 검토
-(위험성, 제약사항, 개선안)
+[채연]: 피드백 - 위험성, 제약, 개선안
 
-### 3️⃣ 최종 답변
-(두 의견을 조율해서 태영님께 드릴 실행 계획)
+[민하]: 추가 의견 - 채연의 의견을 반영한 조율
 
-**중요**: 이 세 섹션을 모두 명시적으로 제시해야 합니다. 생략하면 안 됩니다.
+[채연]: 최종 검토 - 최종안에 대한 승인/권고
+
+**매우 중요한 규칙**:
+• 반드시 이 형식을 따르세요: [이름]: 내용
+• 각 사람의 발언은 줄바꿈으로 명확히 구분하세요
+• 민하와 채연이 번갈아가며 최소 2~3번 이상 대화해야 합니다
+• 마지막은 항상 채연의 최종 검토로 끝내세요
+• 형식을 무시하거나 다른 방식으로 답변하면 안 됩니다
 
 ## 중요한 주의사항
 
@@ -299,11 +304,56 @@ function runChat({ userMessage, attRefs, speaker }) {
         else if (ev.type === 'system' && ev.subtype === 'api_retry') {
           broadcast({ t: 'retry', attempt: ev.attempt });
         }
-        /* End of turn — persist and finalize. */
+        /* End of turn — parse dialogue and split by speaker. */
         else if (ev.type === 'result') {
           state.generating = false;
           state.activeAssistantId = null;
           if (ev.session_id) state.sessionId = ev.session_id;
+
+          // Parse dialogue format: [민하]: text [채연]: text
+          const dialogueParts = asstMsg.text.match(/\[민하\]:|(?=\[채연\]:)|\[채연\]:|(?=\n\n)/g);
+          const sections = asstMsg.text.split(/\[민하\]:|(?=\[채연\]:)/g).filter(s => s.trim());
+
+          if (sections.length > 1) {
+            // Clear original message and create individual speaker messages
+            state.messages.pop(); // Remove combined message
+            state.activeAssistantId = null;
+
+            let currentSpeaker = 'minha';
+            sections.forEach((section, idx) => {
+              // Detect speaker from content or pattern
+              const trimmed = section.trim();
+              if (trimmed.startsWith('[채연]:')) {
+                currentSpeaker = 'chaeyeon';
+              } else if (trimmed.startsWith('[민하]:')) {
+                currentSpeaker = 'minha';
+              }
+
+              // Remove speaker marker from text
+              let text = trimmed
+                .replace(/^\[민하\]:\s*/, '')
+                .replace(/^\[채연\]:\s*/, '')
+                .trim();
+
+              if (text) {
+                const speakerMsg = {
+                  id: randomBytes(6).toString('hex'),
+                  role: 'assistant',
+                  speaker: currentSpeaker,
+                  text: text,
+                  createdAt: Date.now(),
+                  tools: [],
+                };
+                state.messages.push(speakerMsg);
+                broadcast({ t: 'assistant-added', message: speakerMsg });
+
+                // Update speaker for next iteration
+                if (trimmed.includes('[민하]:')) currentSpeaker = 'minha';
+                if (trimmed.includes('[채연]:')) currentSpeaker = 'chaeyeon';
+              }
+            });
+          }
+
           saveStateSoon();
           broadcast({
             t: 'assistant-done',

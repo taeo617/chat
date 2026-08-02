@@ -1409,16 +1409,6 @@
   /* Team members data */
   const TEAM_MEMBERS = [
     {
-      id: 1,
-      name: '김태영',
-      role: '대표',
-      department: '경영진',
-      joinDate: '2024-01-01',
-      model: 'N/A',
-      guidelines: '전략 수립, 의사결정',
-      avatar: null
-    },
-    {
       id: 2,
       name: '채연',
       role: '감사실장',
@@ -1676,7 +1666,8 @@
       const row = document.createElement('div');
       row.className = 'row ' + m.role
         + (lastRole !== m.role ? ' gap' : '')
-        + (isTail ? ' tail' : '');
+        + (isTail ? ' tail' : '')
+        + (m.speaker ? ' speaker-' + m.speaker : '');
       const bubble = document.createElement('div');
       const hasImgs = Array.isArray(m.images) && m.images.length > 0;
       const noText = hasImgs && !m.text;
@@ -1684,6 +1675,26 @@
       bubble.className = 'bubble ' + m.role
         + (isEmpty ? ' empty' : '')
         + (noText ? ' no-text' : '');
+
+      // Add speaker header for assistant messages
+      if (m.role === 'assistant' && m.speaker) {
+        const speaker = m.speaker === 'minha' ? ASSISTANTS.minha : ASSISTANTS.chaeyeon;
+        const header = document.createElement('div');
+        header.className = 'bubble-speaker-header';
+        header.style.display = 'flex';
+        header.style.alignItems = 'center';
+        header.style.gap = '6px';
+        header.style.marginBottom = '6px';
+        header.style.paddingBottom = '6px';
+        header.style.borderBottom = '1px solid rgba(0,0,0,0.1)';
+        header.innerHTML = `
+          <span style="width: 24px; height: 24px; border-radius: 50%; background: ${speaker.color}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;">
+            ${speaker.name[0]}
+          </span>
+          <strong style="color: ${speaker.color}; font-size: 13px;">${speaker.name} (${speaker.role})</strong>
+        `;
+        bubble.appendChild(header);
+      }
       if (isEmpty) {
         bubble.innerHTML = '<span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span>';
       }
