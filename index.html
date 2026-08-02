@@ -164,10 +164,11 @@
   }
   .header-inner {
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     min-height: 68px;
+    max-width: 100%;
   }
   .icon-btn {
     width: 40px; height: 40px;
@@ -185,7 +186,7 @@
   .icon-btn:active { background: var(--border); }
   .icon-btn svg { width: 22px; height: 22px; }
 
-  #menu-btn { grid-column: 1; justify-self: start; }
+  #menu-btn { grid-column: 1; justify-self: start; margin-right: -8px; }
   .header-identity {
     grid-column: 2 !important;
     grid-row: 1 !important;
@@ -1238,7 +1239,7 @@
     <div id="team-modal" role="dialog" aria-label="팀 구성원">
       <div id="team-modal-content">
         <div id="team-modal-header">
-          <h2>팀 구성원</h2>
+          <h2>인사기록 카드</h2>
           <button id="team-modal-close" type="button" aria-label="닫기">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
