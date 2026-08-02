@@ -1871,6 +1871,7 @@
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           prompt: text,
+          speaker: activeAssistant.id,
           attachments: atts.length
             ? atts.map((a) => ({ name: a.name, mime: a.mime, dataUrl: a.dataUrl }))
             : undefined,

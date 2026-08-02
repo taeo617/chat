@@ -161,7 +161,7 @@ cleanupOldAttachments();
 
 let currentChild = null;  // for /stop
 
-function runChat({ userMessage, attRefs }) {
+function runChat({ userMessage, attRefs, speaker }) {
   return new Promise((resolve) => {
     /* Build final prompt: attachment refs prepended so Claude reads them. */
     const refsBlock = attRefs.length
@@ -178,7 +178,17 @@ function runChat({ userMessage, attRefs }) {
       '--permission-mode', 'dontAsk',
     ];
     if (state.config.model)        args.push('--model', state.config.model);
-    const composedPrompt = (state.config.systemPrompt || '') + toneDirective(state.config.humorLevel);
+
+    let composedPrompt = state.config.systemPrompt || '';
+
+    // Add speaker-specific instructions based on current speaker
+    if (speaker === 'chaeyeon') {
+      composedPrompt += '\n\n[현재 화자: 채연 감사실장]\n당신은 감사실장으로, 업무 감사, 품질 검수, 할루시네이션 감지, 검토를 담당합니다. 비판적이고 검증 지향적으로 답장하세요.';
+    } else if (speaker === 'minha') {
+      composedPrompt += '\n\n[현재 화자: 민하 비서실장]\n당신은 비서실장으로, 업무 효율화, 자동화, 일정 관리, 시스템 운영을 담당합니다. 실무적이고 실행 지향적으로 답장하세요.';
+    }
+
+    composedPrompt += toneDirective(state.config.humorLevel);
     args.push('--system-prompt', composedPrompt);
     if (state.sessionId)           args.push('--resume', state.sessionId);
 
@@ -406,7 +416,7 @@ const server = createServer(async (req, res) => {
       try { payload = JSON.parse(body); }
       catch { res.writeHead(400); return res.end('bad json'); }
 
-      const { prompt = '', attachments } = payload;
+      const { prompt = '', attachments, speaker } = payload;
       if (!prompt.trim() && !attachments?.length) {
         res.writeHead(400); return res.end('empty message');
       }
@@ -436,7 +446,7 @@ const server = createServer(async (req, res) => {
       res.end(JSON.stringify({ ok: true, id: userMsg.id }));
 
       /* Fire the chat in background; events flow via broadcast. */
-      runChat({ userMessage: userMsg, attRefs }).catch((e) => {
+      runChat({ userMessage: userMsg, attRefs, speaker }).catch((e) => {
         console.error('[chat] runChat failed:', e);
       });
       return;
