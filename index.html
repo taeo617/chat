@@ -1,0 +1,2094 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Chat" />
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+<title>Chat</title>
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="icon" type="image/svg+xml" href="/icon.svg" />
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-elev: #f2f2f7;
+    --border: #e5e5ea;
+    --border-strong: #d1d1d6;
+    --text: #000000;
+    --text-secondary: #3c3c43;
+    --text-muted: #8e8e93;
+    --text-faint: #b0b0b8;
+    --blue: #007aff;
+    --blue-pressed: #0064d1;
+    --user-bubble: #5ae85d;
+    --user-text: #000000;
+    --assistant-bubble: #e9e9eb;
+    --assistant-text: #000000;
+    --composer-pill-bg: #e5e5ea;
+    --header-bg: rgba(255,255,255,0.85);
+    --composer-bg: rgba(255,255,255,0.94);
+    --pill-bg: #ffffff;
+    --pill-shadow: 0 1px 3px rgba(0,0,0,0.10), 0 6px 20px rgba(0,0,0,0.06);
+    --danger: #ff3b30;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #000000;
+      --bg-elev: #1c1c1e;
+      --border: #2c2c2e;
+      --border-strong: #38383a;
+      --text: #ffffff;
+      --text-secondary: #e5e5ea;
+      --text-muted: #8e8e93;
+      --text-faint: #48484a;
+      --blue: #0a84ff;
+      --blue-pressed: #0066cc;
+      --user-bubble: #5ae85d;
+      --user-text: #000000;
+      --assistant-bubble: #3a3a3c;
+      --assistant-text: #ffffff;
+      --composer-pill-bg: #2c2c2e;
+      --header-bg: rgba(0,0,0,0.72);
+      --composer-bg: rgba(0,0,0,0.94);
+      --pill-bg: #2c2c2e;
+      --pill-shadow: 0 1px 3px rgba(0,0,0,0.5), 0 6px 20px rgba(0,0,0,0.4);
+      --danger: #ff453a;
+      color-scheme: dark;
+    }
+  }
+  /* Manual theme overrides (win over media query in both directions) */
+  :root[data-theme="light"] {
+    --bg: #ffffff; --bg-elev: #f2f2f7; --border: #e5e5ea; --border-strong: #d1d1d6;
+    --text: #000000; --text-secondary: #3c3c43; --text-muted: #8e8e93; --text-faint: #b0b0b8;
+    --blue: #007aff; --blue-pressed: #0064d1;
+    --user-bubble: #5ae85d; --user-text: #000000;
+    --assistant-bubble: #e9e9eb; --assistant-text: #000000;
+    --composer-pill-bg: #e5e5ea;
+    --header-bg: rgba(255,255,255,0.85); --composer-bg: rgba(255,255,255,0.94);
+    --pill-bg: #ffffff;
+    --pill-shadow: 0 1px 3px rgba(0,0,0,0.10), 0 6px 20px rgba(0,0,0,0.06);
+    --danger: #ff3b30;
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    --bg: #000000; --bg-elev: #1c1c1e; --border: #2c2c2e; --border-strong: #38383a;
+    --text: #ffffff; --text-secondary: #e5e5ea; --text-muted: #8e8e93; --text-faint: #48484a;
+    --blue: #0a84ff; --blue-pressed: #0066cc;
+    --user-bubble: #5ae85d; --user-text: #000000;
+    --assistant-bubble: #3a3a3c; --assistant-text: #ffffff;
+    --composer-pill-bg: #2c2c2e;
+    --header-bg: rgba(0,0,0,0.72); --composer-bg: rgba(0,0,0,0.94);
+    --pill-bg: #2c2c2e;
+    --pill-shadow: 0 1px 3px rgba(0,0,0,0.5), 0 6px 20px rgba(0,0,0,0.4);
+    --danger: #ff453a;
+    color-scheme: dark;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family:
+      -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+      "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif;
+    font-size: 17px;
+    line-height: 1.35;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overflow: hidden;
+  }
+  button { font: inherit; color: inherit; }
+
+  html, body {
+    overscroll-behavior-y: none;
+    /* Bleed the bg into notch/home-indicator safe zones */
+    background: var(--bg);
+  }
+  #page {
+    /* Wraps #app so wide desktop viewports get a subtle side backdrop
+       instead of one lonely 520px column of white-on-white. */
+    min-height: 100dvh;
+    display: flex;
+    justify-content: center;
+    background: var(--bg);
+  }
+  @media (min-width: 720px) {
+    #page {
+      background: var(--bg-elev);
+    }
+  }
+  #app {
+    display: flex;
+    flex-direction: column;
+    /* Use svh on iOS Safari to avoid the URL bar bouncing the composer offscreen */
+    height: 100svh;
+    height: 100dvh;
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
+    background: var(--bg);
+    position: relative;
+    /* Landscape iPhone: don't let content sit under the notch */
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  @media (min-width: 720px) {
+    #app {
+      max-width: 720px;
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+    }
+  }
+  @media (min-width: 1024px) {
+    #app { max-width: 760px; }
+  }
+
+  /* ---------- Header ---------- */
+  header {
+    position: relative;
+    padding: max(env(safe-area-inset-top), 8px) 12px 10px;
+    background: var(--header-bg);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid var(--border);
+    z-index: 5;
+  }
+  .header-inner {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 8px;
+    min-height: 68px;
+  }
+  .icon-btn {
+    width: 40px; height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 0;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background .15s ease;
+  }
+  .icon-btn:hover { background: var(--bg-elev); }
+  .icon-btn:active { background: var(--border); }
+  .icon-btn svg { width: 22px; height: 22px; }
+
+  #menu-btn { grid-column: 1; justify-self: start; }
+  .header-identity {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    justify-self: center;
+  }
+  #header-right {
+    grid-column: 3;
+    justify-self: end;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+  #weather-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 10px;
+    white-space: nowrap;
+    line-height: 1.2;
+    max-width: 220px;
+  }
+  #weather-chip .w-emoji { font-size: 14px; }
+  #weather-chip .w-temp { font-weight: 600; color: var(--text); }
+  #weather-chip .w-aqi { color: var(--text-muted); }
+  #weather-chip .w-aqi.good { color: #34c759; }
+  #weather-chip .w-aqi.normal { color: var(--text-secondary); }
+  #weather-chip .w-aqi.bad { color: #ff9500; }
+  #weather-chip .w-aqi.worst { color: var(--danger); }
+  #weather-chip.loading { opacity: 0.55; }
+  #theme-btn { width: 32px; height: 32px; }
+  #theme-btn svg { width: 18px; height: 18px; }
+
+  .header-identity {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .header-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #d1d1d6, #a9a9b0);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 600;
+    overflow: hidden;
+    margin-bottom: 2px;
+  }
+  .header-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .header-name {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--text);
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    letter-spacing: -0.01em;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .header-name span {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+  }
+  .header-name svg { width: 10px; height: 10px; color: var(--text-muted); flex-shrink: 0; }
+  .header-role {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.2;
+    max-width: 100%;
+    padding: 0 6px;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ---------- Message list ---------- */
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding: 12px 18px 6px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;   /* enable flex child overflow */
+  }
+  #messages > .spacer { flex: 1; }
+
+  .time-sep {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 10px 0 4px;
+    letter-spacing: 0.02em;
+  }
+  .time-sep b {
+    color: var(--text-secondary);
+    font-weight: 600;
+    margin-right: 4px;
+  }
+
+  .row {
+    display: flex;
+    width: 100%;
+    margin-top: 2px;
+  }
+  .row.gap { margin-top: 10px; }
+  .row.user { justify-content: flex-end; }
+  .row.assistant { justify-content: flex-start; }
+
+  .bubble {
+    max-width: 75%;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 17px;
+    line-height: 1.32;
+    letter-spacing: -0.01em;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    min-height: 34px;
+    min-width: 0;
+  }
+  @media (min-width: 720px) {
+    .bubble { max-width: 68%; }
+  }
+  .bubble-images {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+  .bubble-images.solo { grid-template-columns: 1fr; }
+  .bubble-images img {
+    width: 100%;
+    max-height: 260px;
+    object-fit: cover;
+    border-radius: 12px;
+    display: block;
+    cursor: zoom-in;
+  }
+  .bubble-images.solo img { object-fit: contain; }
+  .bubble.no-text { padding: 4px; background: transparent; }
+  .bubble.no-text .bubble-images { margin-bottom: 0; }
+  .bubble.user {
+    background: var(--user-bubble);
+    color: var(--user-text);
+  }
+  .bubble.assistant {
+    background: var(--assistant-bubble);
+    color: var(--assistant-text);
+  }
+  /* Typing indicator — small pill bubble hugging 3 horizontal dots.
+     Overrides .bubble defaults so the shell fits exactly the dot cluster;
+     the row's .tail class still supplies the classic bottom-left tail via
+     the shared .row.tail .bubble.assistant::before/::after rules. */
+  .bubble.assistant.empty {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 5px !important;
+    width: fit-content !important;
+    max-width: fit-content !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 10px 14px !important;
+    line-height: 1 !important;
+    border-radius: 22px !important;
+    color: var(--text-muted);
+  }
+  .bubble.assistant.empty > .loading-dot {
+    display: inline-block;
+    flex: 0 0 auto;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: currentColor;
+    opacity: 0.4;
+    animation: dot 1.2s infinite ease-in-out;
+    will-change: transform, opacity;
+  }
+  .bubble.assistant.empty > .loading-dot:nth-child(2) { animation-delay: 0.15s; }
+  .bubble.assistant.empty > .loading-dot:nth-child(3) { animation-delay: 0.30s; }
+  @media (prefers-reduced-motion: reduce) {
+    .bubble.assistant.empty > .loading-dot { animation: none; opacity: 0.55; }
+  }
+  /* Slightly shorter tail for the tiny typing bubble so proportions don't look off */
+  .row.tail .bubble.assistant.empty::before,
+  .row.tail .bubble.assistant.empty::after {
+    height: 16px;
+    bottom: 0;
+  }
+  .row.tail .bubble.assistant.empty::before {
+    width: 14px;
+    left: -6px;
+    border-bottom-right-radius: 14px 12px;
+  }
+  .row.tail .bubble.assistant.empty::after {
+    width: 16px;
+    left: -16px;
+    border-bottom-right-radius: 10px;
+  }
+  /* Classic iMessage bubble tail — only on the last row of a same-sender streak */
+  .row.tail .bubble {
+    position: relative;
+  }
+  .row.tail .bubble::before,
+  .row.tail .bubble::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    height: 22px;
+  }
+  .row.tail .bubble.user::before {
+    right: -8px;
+    width: 20px;
+    background: var(--user-bubble);
+    border-bottom-left-radius: 18px 15px;
+  }
+  .row.tail .bubble.user::after {
+    right: -21px;
+    width: 22px;
+    background: var(--bg);
+    border-bottom-left-radius: 12px;
+  }
+  .row.tail .bubble.assistant::before {
+    left: -8px;
+    width: 20px;
+    background: var(--assistant-bubble);
+    border-bottom-right-radius: 18px 15px;
+  }
+  .row.tail .bubble.assistant::after {
+    left: -21px;
+    width: 22px;
+    background: var(--bg);
+    border-bottom-right-radius: 12px;
+  }
+
+  .read-receipt {
+    display: block;
+    text-align: right;
+    color: var(--text-muted);
+    font-size: 11px;
+    padding: 3px 6px 0 0;
+    letter-spacing: -0.01em;
+  }
+  .read-receipt b { color: var(--text-secondary); font-weight: 500; }
+  /* Don't draw a tail on image-only bubbles (they have no bg to attach to) */
+  .row.tail .bubble.no-text::before,
+  .row.tail .bubble.no-text::after { display: none; }
+  @keyframes dot {
+    0%,60%,100% { opacity: 0.25; transform: translateY(0); }
+    30% { opacity: 0.85; transform: translateY(-3px); }
+  }
+
+  .stop-row {
+    display: flex;
+    justify-content: center;
+    margin: 10px 0 2px;
+  }
+  .stop-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--pill-bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    box-shadow: var(--pill-shadow);
+    border-radius: 999px;
+    padding: 8px 14px 8px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .stop-pill svg { width: 12px; height: 12px; }
+  .tool-row {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 12px;
+    padding: 4px 0 2px;
+    letter-spacing: -0.01em;
+  }
+
+
+  .empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--text-muted);
+    padding: 40px 24px;
+    gap: 6px;
+  }
+  .empty p { margin: 0; font-size: 14px; }
+  .empty p.sub { color: var(--text-faint); font-size: 13px; }
+
+  .err {
+    margin: 6px 12px 4px;
+    background: color-mix(in srgb, var(--danger) 10%, var(--bg));
+    color: var(--danger);
+    border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .err button { background: none; border: 0; color: inherit; cursor: pointer; font-size: 14px; }
+
+  /* ---------- Composer ---------- */
+  footer {
+    padding: 6px 12px calc(max(env(safe-area-inset-bottom), 8px) + 4px);
+    background: var(--bg);
+    z-index: 5;
+  }
+  .composer-atts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 4px 4px 6px;
+  }
+  .composer-atts[hidden] { display: none; }
+  .composer-att {
+    position: relative;
+    width: 56px;
+    height: 56px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--bg-elev);
+    flex-shrink: 0;
+  }
+  .composer-att img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .composer-att .att-x {
+    position: absolute;
+    top: -6px; right: -6px;
+    width: 20px; height: 20px;
+    border-radius: 999px;
+    background: rgba(0,0,0,0.75);
+    color: #fff;
+    border: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  #composer {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+  }
+  .composer-plus {
+    width: 36px; height: 36px;
+    flex-shrink: 0;
+    border-radius: 999px;
+    border: 0;
+    background: var(--composer-pill-bg);
+    color: var(--text);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    align-self: center;
+  }
+  .composer-plus:active { transform: scale(0.94); }
+  .composer-plus svg { width: 20px; height: 20px; }
+  .composer-pill {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    background: var(--composer-pill-bg);
+    border-radius: 999px;
+    height: 36px;
+    padding: 0 4px 0 14px;
+    gap: 4px;
+    overflow: hidden;
+  }
+  .composer-input {
+    flex: 1;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 16px;
+    line-height: 1.2;
+    resize: none;
+    padding: 0;
+    height: 22px;
+    max-height: 22px;
+    min-height: 22px;
+    font-family: inherit;
+    overflow-y: hidden;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .composer-input::placeholder { color: var(--text-muted); }
+  .composer-right-btn {
+    width: 28px; height: 28px;
+    flex-shrink: 0;
+    margin: 0;
+    border: 0;
+    border-radius: 999px;
+    background: var(--user-bubble);
+    color: var(--user-text);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.12s ease;
+  }
+  .composer-right-btn.visible { display: inline-flex; }
+  .composer-right-btn:active { transform: scale(0.92); }
+  .composer-right-btn svg { width: 16px; height: 16px; }
+
+  /* ---------- Settings modal ---------- */
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 20;
+  }
+  .backdrop.open { display: flex; }
+  @media (min-width: 600px) {
+    .backdrop { align-items: center; padding: 24px; }
+  }
+  .sheet {
+    width: 100%;
+    max-width: 520px;
+    background: var(--bg);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    border: 1px solid var(--border);
+    border-bottom: 0;
+    padding-bottom: max(env(safe-area-inset-bottom), 16px);
+    /* svh so landscape iOS doesn't clip; cap so composer stays reachable */
+    max-height: min(92svh, 92dvh);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  @media (min-width: 600px) {
+    .sheet {
+      border-radius: 20px;
+      border-bottom: 1px solid var(--border);
+      max-height: 82svh;
+    }
+  }
+  @media (max-height: 500px) {
+    /* Landscape phone: give the sheet more room */
+    .sheet { max-height: 96svh; border-radius: 0; }
+    .backdrop { align-items: stretch; }
+  }
+  .sheet-handle {
+    width: 40px; height: 4px;
+    background: var(--text-faint);
+    opacity: 0.5;
+    border-radius: 999px;
+    margin: 8px auto 0;
+  }
+  .sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sheet-head h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .sheet-link {
+    background: none;
+    border: 0;
+    color: var(--blue);
+    font-size: 15px;
+    cursor: pointer;
+    padding: 6px 4px;
+  }
+  .sheet-link.bold { font-weight: 600; }
+  .sheet-body {
+    padding: 14px 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 13px; font-weight: 600; color: var(--text); }
+  .field .hint { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+  .input, .textarea, .select {
+    width: 100%;
+    background: var(--bg-elev);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 15px;
+    font-family: inherit;
+    outline: none;
+    line-height: 1.4;
+  }
+  .textarea { resize: vertical; min-height: 100px; }
+  .input:focus, .textarea:focus, .select:focus { border-color: var(--blue); }
+  .row-split { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .link-danger { color: var(--danger); font-size: 13px; background: none; border: 0; padding: 6px 0; cursor: pointer; }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .badge .dot-status { width: 6px; height: 6px; border-radius: 999px; background: var(--text-muted); }
+  .badge .dot-status.on { background: #34c759; }
+  .badge .dot-status.off { background: var(--danger); }
+
+  /* ---------- Menu popover ---------- */
+  #menu-pop {
+    position: absolute;
+    top: calc(env(safe-area-inset-top) + 60px);
+    left: 12px;
+    z-index: 30;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--pill-shadow);
+    padding: 6px;
+    min-width: 200px;
+    display: none;
+  }
+  #menu-pop.open { display: block; }
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: transparent;
+    border: 0;
+    width: 100%;
+    text-align: left;
+    color: var(--text);
+    font: inherit;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  .menu-item:hover { background: var(--bg-elev); }
+  .menu-item.danger { color: var(--danger); }
+  .menu-sep { height: 1px; background: var(--border); margin: 4px 6px; }
+  .menu-humor {
+    padding: 10px 12px 12px;
+  }
+  .menu-humor-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .menu-humor-label b { color: var(--text); font-weight: 600; font-size: 14px; }
+  .menu-humor-bar {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 3px;
+  }
+  .menu-humor-bar button {
+    height: 22px;
+    border: 0;
+    border-radius: 4px;
+    background: var(--bg-elev);
+    cursor: pointer;
+    padding: 0;
+    transition: background .1s ease;
+  }
+  .menu-humor-bar button:hover { background: var(--border); }
+  .menu-humor-bar button.on {
+    background: var(--blue);
+  }
+  .menu-humor-hint {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  /* ---------- Team Modal ---------- */
+  #team-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.4);
+    display: none;
+    align-items: flex-end;
+    z-index: 50;
+  }
+  #team-modal.open {
+    display: flex;
+  }
+  #team-modal-content {
+    width: 100%;
+    max-width: 600px;
+    background: var(--bg);
+    border-radius: 20px 20px 0 0;
+    padding: max(env(safe-area-inset-bottom), 16px) 16px 16px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp .3s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  #team-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  #team-modal-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+  }
+  #team-modal-close {
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    color: var(--text-secondary);
+    transition: background .15s ease;
+  }
+  #team-modal-close:hover {
+    background: var(--bg-elev);
+  }
+  #team-modal-close svg {
+    width: 20px;
+    height: 20px;
+  }
+  .team-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+  }
+  .team-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+    transition: all .2s ease;
+  }
+  .team-card:active {
+    transform: scale(0.95);
+    background: var(--bg);
+  }
+  .team-card-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    margin: 0 auto 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: 600;
+    color: #fff;
+    overflow: hidden;
+  }
+  .team-card-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .team-card-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .team-card-role {
+    font-size: 12px;
+    color: var(--blue);
+    margin-bottom: 4px;
+  }
+  .team-card-dept {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .team-card-info {
+    font-size: 10px;
+    color: var(--text-faint);
+    line-height: 1.4;
+    border-top: 1px solid var(--border);
+    padding-top: 8px;
+  }
+
+  /* Avatar lightbox — tap the small circle to see the full portrait */
+  #avatar-lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.92);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 40;
+    padding: 24px;
+    cursor: zoom-out;
+    animation: lightbox-in 0.18s ease-out;
+  }
+  #avatar-lightbox.open { display: flex; }
+  #avatar-lightbox img {
+    max-width: 90vw;
+    max-height: 88vh;
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+  @keyframes lightbox-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #avatar-lightbox { animation: none; }
+  }
+</style>
+</head>
+<body>
+  <div id="page">
+  <div id="app">
+    <header>
+      <div class="header-inner">
+        <button id="menu-btn" class="icon-btn" type="button" aria-label="메뉴" aria-haspopup="menu" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+        <div class="header-identity" id="header-identity" role="button" tabindex="0" aria-label="설정 열기">
+          <div class="header-avatar" id="header-avatar"></div>
+          <div class="header-name" id="header-name-wrap">
+            <span id="header-name"></span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+          </div>
+          <div class="header-role" id="header-role"></div>
+        </div>
+        <div id="header-right">
+          <button id="team-btn" class="icon-btn" type="button" aria-label="팀 구성원">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </button>
+          <button id="theme-btn" class="icon-btn" type="button" aria-label="라이트/다크 모드 전환">
+            <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+          </button>
+          <div id="weather-chip" class="loading" title="현재 날씨·미세먼지">
+            <span class="w-emoji">⏳</span>
+            <span class="w-temp">--°</span>
+            <span class="w-aqi">--</span>
+          </div>
+        </div>
+      </div>
+      <div id="menu-pop" role="menu" aria-labelledby="menu-btn">
+        <button type="button" class="menu-item" id="menu-new">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 20h9M4 20l4-1 11-11-3-3L5 16l-1 4z"/></svg>
+          <span>새 대화</span>
+        </button>
+        <button type="button" class="menu-item" id="menu-settings">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm7.4-2.3.9-.7-1.4-2.4-1.1.3a5.6 5.6 0 0 0-1.4-.8l-.3-1.2h-2.8l-.3 1.2a5.6 5.6 0 0 0-1.4.8l-1.1-.3-1.4 2.4.9.7a5.7 5.7 0 0 0 0 1.6l-.9.7 1.4 2.4 1.1-.3a5.6 5.6 0 0 0 1.4.8l.3 1.2h2.8l.3-1.2a5.6 5.6 0 0 0 1.4-.8l1.1.3 1.4-2.4-.9-.7a5.7 5.7 0 0 0 0-1.6Z"/></svg>
+          <span>설정 (페르소나)</span>
+        </button>
+        <div class="menu-sep"></div>
+        <div class="menu-humor">
+          <div class="menu-humor-label">
+            <span>유머 레벨</span>
+            <b id="humor-num">3</b>
+          </div>
+          <div class="menu-humor-bar" id="humor-bar" role="group" aria-label="유머 레벨 선택 (1-10)">
+            <!-- filled by JS: 10 buttons -->
+          </div>
+          <div class="menu-humor-hint" id="humor-hint">정중·실무적 (기본)</div>
+        </div>
+        <div class="menu-sep"></div>
+        <button type="button" class="menu-item" id="menu-notif">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2c0 .53-.21 1.04-.59 1.4L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg>
+          <span id="menu-notif-label">알림 켜기</span>
+        </button>
+        <div class="menu-sep"></div>
+        <button type="button" class="menu-item danger" id="menu-wipe">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m2 0v13a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V7"/></svg>
+          <span>모든 기록 지우기</span>
+        </button>
+      </div>
+    </header>
+
+    <main id="messages" aria-live="polite"></main>
+
+    <div id="err-slot"></div>
+
+    <footer>
+      <div class="composer-atts" id="composer-atts" hidden></div>
+      <form id="composer" autocomplete="off">
+        <button type="button" class="composer-plus" id="plus-btn" aria-label="이미지 첨부">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+        <input type="file" id="file-input" accept="image/*" multiple hidden />
+        <div class="composer-pill">
+          <textarea id="input" class="composer-input" rows="1" placeholder="" spellcheck="false"></textarea>
+          <button type="submit" class="composer-right-btn" id="send-btn" aria-label="보내기">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+          </button>
+        </div>
+      </form>
+    </footer>
+
+    <div id="team-modal" role="dialog" aria-label="팀 구성원">
+      <div id="team-modal-content">
+        <div id="team-modal-header">
+          <h2>팀 구성원</h2>
+          <button id="team-modal-close" type="button" aria-label="닫기">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="team-grid" id="team-grid">
+          <!-- Filled by JavaScript -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- /#page -->
+
+  <div id="avatar-lightbox" role="dialog" aria-label="프로필 사진">
+    <img id="avatar-lightbox-img" alt="프로필 사진 크게 보기" />
+  </div>
+
+  <div class="backdrop" id="settings-backdrop">
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <button type="button" class="sheet-link" id="settings-cancel">취소</button>
+        <h2 id="settings-title">설정</h2>
+        <button type="button" class="sheet-link bold" id="settings-save">저장</button>
+      </div>
+      <div class="sheet-body">
+        <div class="badge" id="server-badge">
+          <span class="dot-status" id="server-dot"></span>
+          <span id="server-status">서버 상태 확인 중…</span>
+        </div>
+        <div class="field">
+          <label for="s-name">이름</label>
+          <input type="text" class="input" id="s-name" />
+        </div>
+        <div class="field">
+          <label for="s-role">부제</label>
+          <input type="text" class="input" id="s-role" placeholder="예: 비서실장" />
+        </div>
+        <div class="field">
+          <label for="s-avatar">프로필 이미지 URL</label>
+          <input type="url" class="input" id="s-avatar" placeholder="https://... (비우면 이름 첫 글자)" />
+        </div>
+        <div class="field">
+          <label for="s-model">모델</label>
+          <select class="select" id="s-model">
+            <option value="sonnet">Sonnet 5 (기본)</option>
+            <option value="opus">Opus 5</option>
+            <option value="haiku">Haiku 4.5</option>
+          </select>
+          <span class="hint">Claude Pro/Max 구독 사용량 풀에서 차감돼요. 별도 결제 없음.</span>
+        </div>
+        <div class="field">
+          <label for="s-system">시스템 프롬프트</label>
+          <textarea class="textarea" id="s-system" rows="6" placeholder="이 인물의 성격·말투·역할을 서술하세요."></textarea>
+          <span class="hint">예: "너는 김태영의 비서실장 민하야. 태영님이라고 부르고 존댓말·담백한 실무 톤으로 응답해."</span>
+        </div>
+        <div class="row-split">
+          <button type="button" class="link-danger" id="wipe-btn">모든 대화 지우기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ---------- State (server is source of truth; we mirror locally) ---------- */
+
+  let messages = [];               // hydrated from /state and updated via /events
+  let config = null;               // hydrated from /state; POST /config to change
+  let sessionId = null;
+  let generating = false;
+  let activeAssistantId = null;    // id of the assistant message currently streaming
+
+  /* Team members data */
+  const TEAM_MEMBERS = [
+    {
+      id: 1,
+      name: '김태영',
+      role: '대표',
+      department: '경영진',
+      joinDate: '2024-01-01',
+      guidelines: '전략 수립, 의사결정',
+      avatar: null
+    },
+    {
+      id: 2,
+      name: '채연',
+      role: '감사실장',
+      department: '감사',
+      joinDate: '2026-08-02',
+      guidelines: '업무 감사, 품질 검수, 할루시네이션 감지',
+      avatar: '/_metadata/chaeyeon-profile.png'
+    },
+    {
+      id: 3,
+      name: '민하',
+      role: '비서실장',
+      department: '비서실',
+      joinDate: '2026-08-02',
+      guidelines: '작업 자동화, 일정 관리, 시스템 운영',
+      avatar: null
+    }
+  ];
+  let pendingAtts = [];            // [{id, name, dataUrl, mime}]
+  const readMap = new Map();       // msgId → timestamp of "읽음" (client-only simulation)
+  const READ_DELAY_MS = 200;
+
+  /* ---------- DOM ---------- */
+
+  const $ = (s) => document.querySelector(s);
+  const messagesEl = $('#messages');
+  const inputEl = $('#input');
+  const sendBtn = $('#send-btn');
+  const composerForm = $('#composer');
+  const menuBtn = $('#menu-btn');
+  const menuPop = $('#menu-pop');
+  const teamBtn = $('#team-btn');
+  const teamModal = $('#team-modal');
+  const teamModalClose = $('#team-modal-close');
+  const teamGrid = $('#team-grid');
+  const themeBtn = $('#theme-btn');
+  const themeIcon = $('#theme-icon');
+  const weatherChip = $('#weather-chip');
+  const humorBar = $('#humor-bar');
+  const humorNum = $('#humor-num');
+  const humorHint = $('#humor-hint');
+  const headerAvatar = $('#header-avatar');
+  const headerName = $('#header-name');
+  const headerRole = $('#header-role');
+  const headerIdentity = $('#header-identity');
+  const errSlot = $('#err-slot');
+  const settingsBackdrop = $('#settings-backdrop');
+  const serverDot = $('#server-dot');
+  const serverStatus = $('#server-status');
+  const plusBtn = $('#plus-btn');
+  const fileInput = $('#file-input');
+  const attsWrap = $('#composer-atts');
+  const sInput = {
+    name: $('#s-name'),
+    role: $('#s-role'),
+    avatar: $('#s-avatar'),
+    model: $('#s-model'),
+    system: $('#s-system'),
+  };
+
+  const esc = (s) => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const escAttr = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  /* ---------- Korean time formatting ---------- */
+  const WEEKDAY_KO = ['일', '월', '화', '수', '목', '금', '토'];
+  const isSameDay = (a, b) =>
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  function formatTime(ts) {
+    const d = new Date(ts), now = new Date();
+    const yest = new Date(now); yest.setDate(now.getDate() - 1);
+    const h24 = d.getHours();
+    const t = `${h24 < 12 ? '오전' : '오후'} ${((h24 + 11) % 12) + 1}:${String(d.getMinutes()).padStart(2,'0')}`;
+    if (isSameDay(d, now))  return { head: '오늘', time: t };
+    if (isSameDay(d, yest)) return { head: '어제', time: t };
+    if ((now - d) / 86400000 < 7) return { head: WEEKDAY_KO[d.getDay()] + '요일', time: t };
+    return { head: `${d.getMonth()+1}월 ${d.getDate()}일 (${WEEKDAY_KO[d.getDay()]})`, time: t };
+  }
+
+  /* ---------- Render ---------- */
+
+  function renderHeader() {
+    if (!config) return;
+    const initial = (config.name || '?').trim().charAt(0);
+    if (config.avatarUrl) {
+      headerAvatar.innerHTML = `<img src="${escAttr(config.avatarUrl)}" alt="" />`;
+    } else {
+      headerAvatar.textContent = initial;
+      headerAvatar.style.background = 'linear-gradient(135deg, #b8b8bf, #8e8e93)';
+    }
+    headerName.textContent = config.name || '이름 없음';
+    headerRole.textContent = generating && activeAssistantId ? '답변 작성 중…' : (config.role || '');
+  }
+
+  /* "읽음: <시간>" — friendly Korean relative time */
+  function readAt(ts) {
+    const now = Date.now();
+    const diff = Math.max(0, now - ts);
+    if (diff < 60_000) return '방금';
+    if (diff < 60 * 60_000) return `${Math.floor(diff / 60_000)}분 전`;
+    const d = new Date(ts), n = new Date(now);
+    const same = d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+    if (same) return '오늘';
+    const y = new Date(now); y.setDate(n.getDate() - 1);
+    if (d.getFullYear() === y.getFullYear() && d.getMonth() === y.getMonth() && d.getDate() === y.getDate()) return '어제';
+    return `${d.getMonth()+1}월 ${d.getDate()}일`;
+  }
+
+  function renderMessages() {
+    messagesEl.innerHTML = '';
+    if (messages.length === 0 && !generating) {
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.innerHTML = `<p>아래에 메시지를 입력해 대화를 시작하세요.</p>
+        <p class="sub">Claude Pro 구독으로 동작. 폰·맥에서 실시간 공유됨.</p>`;
+      messagesEl.appendChild(empty);
+      return;
+    }
+    const spacer = document.createElement('div');
+    spacer.className = 'spacer';
+    messagesEl.appendChild(spacer);
+
+    /* Show "읽음" receipt on every user message that has been read.
+       readAt is set 200ms after the message is added (simulates the recipient
+       glancing at it). Stored per-msg-id in `readMap` (client-only state). */
+    const receiptFor = (idx) => {
+      const m = messages[idx];
+      if (m.role !== 'user') return null;
+      const readAtTs = readMap.get(m.id);
+      return readAtTs || null;
+    };
+
+    let lastShownTime = 0, lastRole = null;
+    for (let i = 0; i < messages.length; i++) {
+      const m = messages[i];
+      const nextRole = messages[i + 1]?.role;
+      const isTail = nextRole !== m.role;   // last of same-sender streak → tail
+      /* Time separator on first msg or after >30min gap */
+      if (m.createdAt - lastShownTime > 30 * 60 * 1000) {
+        const t = formatTime(m.createdAt);
+        const sep = document.createElement('div');
+        sep.className = 'time-sep';
+        sep.innerHTML = `<b>${esc(t.head)}</b>${esc(t.time)}`;
+        messagesEl.appendChild(sep);
+        lastShownTime = m.createdAt;
+        lastRole = null;
+      }
+      const isPendingAssistant = generating && m.id === activeAssistantId;
+      /* Stop pill BETWEEN last user msg and the pending assistant reply */
+      if (isPendingAssistant) {
+        const stopRow = document.createElement('div');
+        stopRow.className = 'stop-row';
+        const pill = document.createElement('button');
+        pill.type = 'button';
+        pill.className = 'stop-pill';
+        pill.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg><span>멈춤</span>`;
+        pill.addEventListener('click', stop);
+        stopRow.appendChild(pill);
+        messagesEl.appendChild(stopRow);
+      }
+
+      const row = document.createElement('div');
+      row.className = 'row ' + m.role
+        + (lastRole !== m.role ? ' gap' : '')
+        + (isTail ? ' tail' : '');
+      const bubble = document.createElement('div');
+      const hasImgs = Array.isArray(m.images) && m.images.length > 0;
+      const noText = hasImgs && !m.text;
+      const isEmpty = isPendingAssistant && !m.text && !hasImgs;
+      bubble.className = 'bubble ' + m.role
+        + (isEmpty ? ' empty' : '')
+        + (noText ? ' no-text' : '');
+      if (isEmpty) {
+        bubble.innerHTML = '<span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span>';
+      }
+      if (hasImgs) {
+        const imgWrap = document.createElement('div');
+        imgWrap.className = 'bubble-images' + (m.images.length === 1 ? ' solo' : '');
+        for (const src of m.images) {
+          const img = document.createElement('img');
+          img.src = src;
+          img.alt = '';
+          img.loading = 'lazy';
+          img.addEventListener('click', () => window.open(src, '_blank'));
+          imgWrap.appendChild(img);
+        }
+        bubble.appendChild(imgWrap);
+      }
+      if (m.text) {
+        const txt = document.createElement('div');
+        txt.textContent = m.text;
+        bubble.appendChild(txt);
+      }
+      if (isPendingAssistant) bubble.id = 'streaming-bubble';
+      row.appendChild(bubble);
+      messagesEl.appendChild(row);
+
+      /* Read receipt under any user message that has been marked read */
+      const rts = receiptFor(i);
+      if (rts) {
+        const rr = document.createElement('div');
+        rr.className = 'read-receipt';
+        rr.innerHTML = `<b>읽음</b>: ${esc(readAt(rts))}`;
+        messagesEl.appendChild(rr);
+      }
+
+      /* Tool activity indicators ("Bash 사용 중...") below assistant bubbles */
+      if (m.role === 'assistant' && Array.isArray(m.tools) && m.tools.length) {
+        const isActive = isPendingAssistant;
+        for (const tool of m.tools) {
+          const toolRow = document.createElement('div');
+          toolRow.className = 'tool-row';
+          toolRow.textContent = `${tool.name} ${isActive ? '사용 중…' : '사용함'}`;
+          messagesEl.appendChild(toolRow);
+        }
+      }
+
+      lastRole = m.role;
+    }
+
+    requestAnimationFrame(() => { messagesEl.scrollTop = messagesEl.scrollHeight; });
+  }
+
+  function updateStreamingBubble(text) {
+    const el = document.getElementById('streaming-bubble');
+    if (!el) return;
+    /* Once real text arrives, drop empty state + remove all loading dots */
+    if (text) {
+      el.classList.remove('empty');
+      el.querySelectorAll(':scope > .loading-dot').forEach((n) => n.remove());
+    }
+    let txt = el.querySelector(':scope > div:not(.bubble-images)');
+    if (!txt) {
+      txt = document.createElement('div');
+      el.appendChild(txt);
+    }
+    txt.textContent = text;
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function renderComposer() {
+    const hasContent = inputEl.value.trim().length > 0 || pendingAtts.length > 0;
+    sendBtn.classList.toggle('visible', hasContent && !generating);
+    /* Input has fixed height (single line, scrolls horizontally). No auto-grow. */
+  }
+
+  function renderComposerAtts() {
+    if (pendingAtts.length === 0) {
+      attsWrap.hidden = true;
+      attsWrap.innerHTML = '';
+    } else {
+      attsWrap.hidden = false;
+      attsWrap.innerHTML = '';
+      for (const a of pendingAtts) {
+        const cell = document.createElement('div');
+        cell.className = 'composer-att';
+        const img = document.createElement('img');
+        img.src = a.dataUrl;
+        img.alt = a.name;
+        const x = document.createElement('button');
+        x.type = 'button';
+        x.className = 'att-x';
+        x.textContent = '✕';
+        x.setAttribute('aria-label', '제거');
+        x.addEventListener('click', () => {
+          pendingAtts = pendingAtts.filter((p) => p.id !== a.id);
+          renderComposerAtts();
+          renderComposer();
+        });
+        cell.appendChild(img);
+        cell.appendChild(x);
+        attsWrap.appendChild(cell);
+      }
+    }
+    renderComposer();
+  }
+
+  function showError(msg) {
+    errSlot.innerHTML = '';
+    const div = document.createElement('div');
+    div.className = 'err';
+    div.innerHTML = `<span>${esc(msg)}</span><button type="button" aria-label="닫기">✕</button>`;
+    div.querySelector('button').addEventListener('click', () => (errSlot.innerHTML = ''));
+    errSlot.appendChild(div);
+  }
+  const clearError = () => (errSlot.innerHTML = '');
+
+  /* ---------- Image downsize (client-side) ---------- */
+
+  async function fileToCompressedDataUrl(file) {
+    const maxDim = 1600;
+    const rawUrl = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = () => reject(r.error);
+      r.readAsDataURL(file);
+    });
+    const img = await new Promise((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = () => reject(new Error('이미지를 불러올 수 없어요.'));
+      i.src = rawUrl;
+    });
+    let { naturalWidth: w, naturalHeight: h } = img;
+    const scale = Math.min(1, maxDim / Math.max(w, h));
+    if (scale < 1) { w = Math.round(w * scale); h = Math.round(h * scale); }
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    return {
+      dataUrl: canvas.toDataURL('image/jpeg', 0.85),
+      mime: 'image/jpeg',
+    };
+  }
+
+  async function addFiles(fileList) {
+    const files = Array.from(fileList || []);
+    for (const f of files) {
+      if (!f.type.startsWith('image/')) continue;
+      try {
+        const { dataUrl, mime } = await fileToCompressedDataUrl(f);
+        pendingAtts.push({
+          id: Math.random().toString(36).slice(2, 10),
+          name: f.name, mime, dataUrl,
+        });
+      } catch (e) {
+        showError(`${f.name}: ${e.message}`);
+      }
+    }
+    renderComposerAtts();
+  }
+
+  /* ---------- Server API ---------- */
+
+  async function hydrate() {
+    try {
+      const r = await fetch('/state', { cache: 'no-store' });
+      if (!r.ok) throw new Error(`state ${r.status}`);
+      const s = await r.json();
+      messages = s.messages || [];
+      config = s.config || {};
+      sessionId = s.sessionId || null;
+      generating = !!s.generating;
+      activeAssistantId = s.activeAssistantId || null;
+      /* Any user message that already has an assistant reply after it must have
+         been read — seed the readMap so the receipts render on cold load. */
+      for (let i = 0; i < messages.length - 1; i++) {
+        const m = messages[i];
+        if (m.role === 'user' && messages[i + 1]?.role === 'assistant') {
+          if (!readMap.has(m.id)) readMap.set(m.id, messages[i + 1].createdAt);
+        }
+      }
+      renderHeader();
+      renderMessages();
+      renderComposer();
+      renderHumor();
+      setServerBadge(true);
+    } catch (e) {
+      setServerBadge(false, e.message);
+    }
+  }
+
+  async function send() {
+    const text = inputEl.value.trim();
+    const atts = pendingAtts.slice();
+    if ((!text && atts.length === 0) || generating) return;
+    clearError();
+    /* Optimistically clear composer; server broadcast will render the message */
+    inputEl.value = '';
+    pendingAtts = [];
+    renderComposerAtts();
+    renderComposer();
+    /* Auto-nudge humor level based on this user message's tone */
+    if (text) nudgeHumorFromUserMessage(text);
+    /* Ask for notification permission (needs a user gesture like send) */
+    maybeRequestNotifOnSend();
+    try {
+      const res = await fetch('/chat', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          prompt: text,
+          attachments: atts.length
+            ? atts.map((a) => ({ name: a.name, mime: a.mime, dataUrl: a.dataUrl }))
+            : undefined,
+        }),
+      });
+      if (res.status === 409) {
+        showError('이미 응답 중이에요. 잠시만요.');
+      } else if (!res.ok) {
+        showError(`서버 오류 (${res.status})`);
+      }
+    } catch (e) {
+      showError(e.message || '네트워크 오류');
+    }
+  }
+
+  async function stop() {
+    try { await fetch('/stop', { method: 'POST' }); } catch {}
+  }
+
+  async function newChat() {
+    if (generating) return;
+    if (messages.length === 0 && !sessionId) return;
+    if (!confirm('현재 대화를 마무리하고 새 대화를 시작할까요?')) return;
+    try { await fetch('/clear', { method: 'POST' }); }
+    catch (e) { showError(e.message); }
+  }
+
+  async function saveConfigPatch(patch) {
+    try {
+      const r = await fetch('/config', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(patch),
+      });
+      if (!r.ok) throw new Error(`config ${r.status}`);
+    } catch (e) {
+      showError('설정 저장 실패: ' + e.message);
+    }
+  }
+
+  /* ---------- SSE ---------- */
+
+  let es = null;
+  function connectEvents() {
+    if (es) try { es.close(); } catch {}
+    es = new EventSource('/events');
+    es.addEventListener('open', () => {
+      setServerBadge(true);
+      /* Re-hydrate on connect / reconnect to catch anything missed while offline */
+      hydrate();
+    });
+    es.addEventListener('error', () => {
+      setServerBadge(false);
+      /* EventSource auto-reconnects; nothing more to do */
+    });
+    es.addEventListener('message', (e) => {
+      let ev; try { ev = JSON.parse(e.data); } catch { return; }
+      handleEvent(ev);
+    });
+  }
+
+  function handleEvent(ev) {
+    switch (ev.t) {
+      case 'user-added': {
+        messages.push(ev.message);
+        renderMessages();
+        renderComposer();
+        /* Simulate "읽음" 200ms later — feels like the recipient just glanced */
+        setTimeout(() => {
+          readMap.set(ev.message.id, Date.now());
+          renderMessages();
+        }, READ_DELAY_MS);
+        break;
+      }
+      case 'assistant-started': {
+        messages.push(ev.message);
+        activeAssistantId = ev.message.id;
+        generating = true;
+        renderHeader();
+        renderMessages();
+        renderComposer();
+        break;
+      }
+      case 'delta': {
+        const m = messages.find((x) => x.id === ev.id);
+        if (m) {
+          m.text += ev.text || '';
+          if (m.id === activeAssistantId) updateStreamingBubble(m.text);
+          else renderMessages();
+        }
+        break;
+      }
+      case 'tool': {
+        const m = messages.find((x) => x.id === ev.id);
+        if (m) {
+          m.tools = m.tools || [];
+          m.tools.push({ name: ev.tool });
+          renderMessages();
+        }
+        break;
+      }
+      case 'assistant-done': {
+        generating = false;
+        const doneId = activeAssistantId;
+        activeAssistantId = null;
+        if (ev.isError) showError('응답 중 오류가 있었어요.');
+        renderHeader();
+        renderMessages();
+        renderComposer();
+        /* Fire notification (only when tab not focused) */
+        const doneMsg = messages.find((m) => m.id === doneId);
+        if (doneMsg?.text) notifyAssistantReply(doneMsg.text);
+        break;
+      }
+      case 'session': {
+        sessionId = ev.sessionId;
+        renderComposer();
+        break;
+      }
+      case 'generating': {
+        generating = !!ev.on;
+        renderHeader();
+        renderComposer();
+        break;
+      }
+      case 'cleared': {
+        messages = [];
+        sessionId = null;
+        generating = false;
+        activeAssistantId = null;
+        readMap.clear();
+        clearError();
+        renderHeader();
+        renderMessages();
+        renderComposer();
+        break;
+      }
+      case 'config': {
+        config = ev.config;
+        renderHeader();
+        renderHumor();
+        break;
+      }
+      case 'error': {
+        showError(ev.message || '알 수 없는 오류');
+        break;
+      }
+      case 'retry': {
+        /* silent */
+        break;
+      }
+    }
+  }
+
+  function setServerBadge(ok, msg) {
+    if (!serverDot) return;
+    if (ok) {
+      serverDot.className = 'dot-status on';
+      serverStatus.textContent = '서버 연결됨 (실시간 동기화)';
+    } else {
+      serverDot.className = 'dot-status off';
+      serverStatus.textContent = '서버 오프라인' + (msg ? ` — ${msg}` : '');
+    }
+  }
+
+  /* ---------- Settings sheet ---------- */
+
+  function openSettings() {
+    if (!config) return;
+    sInput.name.value = config.name || '';
+    sInput.role.value = config.role || '';
+    sInput.avatar.value = config.avatarUrl || '';
+    sInput.model.value = config.model || 'sonnet';
+    sInput.system.value = config.systemPrompt || '';
+    settingsBackdrop.classList.add('open');
+  }
+  function closeSettings() { settingsBackdrop.classList.remove('open'); }
+  async function saveSettings() {
+    const patch = {
+      name: sInput.name.value.trim(),
+      role: sInput.role.value.trim(),
+      avatarUrl: sInput.avatar.value.trim(),
+      model: sInput.model.value,
+      systemPrompt: sInput.system.value.trim(),
+    };
+    await saveConfigPatch(patch);
+    closeSettings();
+  }
+  async function wipeAll() {
+    if (!confirm('모든 대화 기록과 세션을 삭제할까요?')) return;
+    try { await fetch('/clear', { method: 'POST' }); } catch {}
+    closeSettings();
+  }
+
+  /* ---------- Wire ---------- */
+
+  composerForm.addEventListener('submit', (e) => { e.preventDefault(); send(); });
+  inputEl.addEventListener('input', renderComposer);
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); }
+  });
+  inputEl.addEventListener('paste', (e) => {
+    const items = Array.from(e.clipboardData?.items || []);
+    const files = items
+      .filter((it) => it.kind === 'file' && it.type.startsWith('image/'))
+      .map((it) => it.getAsFile()).filter(Boolean);
+    if (files.length) { e.preventDefault(); addFiles(files); }
+  });
+  plusBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => {
+    addFiles(e.target.files);
+    e.target.value = '';
+  });
+  ['dragover', 'drop'].forEach((k) =>
+    document.addEventListener(k, (e) => e.preventDefault()));
+  document.addEventListener('drop', (e) => {
+    const files = Array.from(e.dataTransfer?.files || [])
+      .filter((f) => f.type.startsWith('image/'));
+    if (files.length) addFiles(files);
+  });
+  /* Header identity click → OPEN LIGHTBOX (see the face big).
+     Settings now lives in the hamburger menu, so this doesn't compete. */
+  const avatarLightbox = $('#avatar-lightbox');
+  const avatarLightboxImg = $('#avatar-lightbox-img');
+  function openAvatarLightbox() {
+    if (!config?.avatarUrl) { openSettings(); return; }  // no picture set → fallback to settings
+    avatarLightboxImg.src = config.avatarUrl;
+    avatarLightbox.classList.add('open');
+  }
+  function closeAvatarLightbox() {
+    avatarLightbox.classList.remove('open');
+  }
+  headerIdentity.addEventListener('click', openAvatarLightbox);
+  headerIdentity.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAvatarLightbox(); }
+  });
+  avatarLightbox.addEventListener('click', closeAvatarLightbox);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && avatarLightbox.classList.contains('open')) closeAvatarLightbox();
+  });
+  settingsBackdrop.addEventListener('click', (e) => {
+    if (e.target === settingsBackdrop) closeSettings();
+  });
+  $('#settings-cancel').addEventListener('click', closeSettings);
+  $('#settings-save').addEventListener('click', saveSettings);
+  $('#wipe-btn').addEventListener('click', wipeAll);
+
+  /* ---------- Theme toggle (per-device localStorage) ---------- */
+
+  const THEME_ICONS = {
+    dark:  'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z',
+    light: 'M12 4v2M12 18v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8z',
+  };
+  function currentTheme() {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark' || saved === 'light') return saved;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    themeIcon.innerHTML = `<path d="${THEME_ICONS[t]}"/>`;
+    themeIcon.setAttribute('fill', t === 'dark' ? 'currentColor' : 'none');
+    /* Update the browser chrome color meta for iOS PWA */
+    const meta = document.querySelector('meta[name="theme-color"]:not([media])');
+    if (!meta) {
+      const m = document.createElement('meta');
+      m.name = 'theme-color';
+      m.content = t === 'dark' ? '#000000' : '#ffffff';
+      document.head.appendChild(m);
+    } else {
+      meta.content = t === 'dark' ? '#000000' : '#ffffff';
+    }
+  }
+  applyTheme(currentTheme());
+  themeBtn.addEventListener('click', () => {
+    const next = currentTheme() === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('theme', next);
+    applyTheme(next);
+  });
+
+  /* ---------- Menu popover ---------- */
+
+  function openMenu() {
+    if (typeof refreshNotifLabel === 'function') refreshNotifLabel();
+    menuPop.classList.add('open');
+    menuBtn.setAttribute('aria-expanded', 'true');
+  }
+  function closeMenu() {
+    menuPop.classList.remove('open');
+    menuBtn.setAttribute('aria-expanded', 'false');
+  }
+  menuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    menuPop.classList.contains('open') ? closeMenu() : openMenu();
+  });
+  document.addEventListener('click', (e) => {
+    if (!menuPop.contains(e.target) && e.target !== menuBtn) closeMenu();
+  });
+
+  /* Team Modal */
+  function renderTeamGrid() {
+    teamGrid.innerHTML = TEAM_MEMBERS.map(member => `
+      <div class="team-card">
+        <div class="team-card-avatar">
+          ${member.avatar ? `<img src="${member.avatar}" alt="${member.name}" />` : member.name[0]}
+        </div>
+        <div class="team-card-name">${member.name}</div>
+        <div class="team-card-role">${member.role}</div>
+        <div class="team-card-dept">${member.department}</div>
+        <div class="team-card-info">
+          <div>입사: ${member.joinDate}</div>
+          <div style="margin-top: 4px;">${member.guidelines}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+  function openTeamModal() {
+    renderTeamGrid();
+    teamModal.classList.add('open');
+  }
+  function closeTeamModal() {
+    teamModal.classList.remove('open');
+  }
+  teamBtn.addEventListener('click', openTeamModal);
+  teamModalClose.addEventListener('click', closeTeamModal);
+  teamModal.addEventListener('click', (e) => {
+    if (e.target === teamModal) closeTeamModal();
+  });
+  $('#menu-new').addEventListener('click', () => { closeMenu(); newChat(); });
+  $('#menu-settings').addEventListener('click', () => { closeMenu(); openSettings(); });
+  $('#menu-wipe').addEventListener('click', () => { closeMenu(); wipeAll(); });
+
+  /* Notification permission — request or explain based on current state */
+  const menuNotifBtn = $('#menu-notif');
+  const menuNotifLabel = $('#menu-notif-label');
+  function refreshNotifLabel() {
+    if (typeof Notification === 'undefined') {
+      menuNotifLabel.textContent = '알림 (지원 안 됨)';
+      menuNotifBtn.disabled = true;
+      return;
+    }
+    const p = Notification.permission;
+    if (p === 'granted') menuNotifLabel.textContent = '알림 켜짐 ✓ (테스트)';
+    else if (p === 'denied') menuNotifLabel.textContent = '알림 차단됨 — 브라우저 설정에서 허용';
+    else menuNotifLabel.textContent = '알림 켜기';
+  }
+  refreshNotifLabel();
+  menuNotifBtn.addEventListener('click', async () => {
+    closeMenu();
+    if (typeof Notification === 'undefined') return;
+    const p = Notification.permission;
+    if (p === 'granted') {
+      /* Test notification so user sees it actually works */
+      try {
+        new Notification(config?.name || '민하', {
+          body: '알림 테스트 — 잘 뜨네요.',
+          icon: config?.avatarUrl || '/icon-192.png',
+          tag: 'chat-test',
+        });
+      } catch (e) {
+        showError('알림을 표시할 수 없어요: ' + e.message);
+      }
+    } else if (p === 'denied') {
+      showError('알림이 차단됐어요. 주소 표시줄 왼쪽 자물쇠 → 알림 → 허용으로 바꿔주세요. (iOS는 홈 화면에 추가 후 앱을 열어야 알림이 활성화됩니다.)');
+    } else {
+      const ok = await ensureNotificationPermission();
+      refreshNotifLabel();
+      if (ok) {
+        try {
+          new Notification(config?.name || '민하', {
+            body: '알림이 켜졌습니다.',
+            icon: config?.avatarUrl || '/icon-192.png',
+            tag: 'chat-welcome',
+          });
+        } catch {}
+      }
+    }
+  });
+
+  /* ---------- Humor level (1-10) ---------- */
+
+  const HUMOR_HINTS = {
+    1: '순수 사무적 — 존댓말, 이모지·유머 없음',
+    2: '사무적 — 존댓말, 감정 최소',
+    3: '정중·실무적 (기본)',
+    4: '정중하고 편안한 존댓말',
+    5: '친근한 존댓말',
+    6: '캐주얼 존댓말, 가벼운 농담',
+    7: '반존대, 친구 같은 편안함',
+    8: '주로 반말, 이모지 많이',
+    9: '반말, 친한 친구 톤',
+    10: '완전 반말, 개그 톤 😜',
+  };
+  function renderHumor() {
+    const level = (config && config.humorLevel) || 3;
+    humorNum.textContent = String(level);
+    humorHint.textContent = HUMOR_HINTS[level] || '';
+    /* Build bar buttons once */
+    if (humorBar.children.length !== 10) {
+      humorBar.innerHTML = '';
+      for (let i = 1; i <= 10; i++) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.dataset.level = String(i);
+        b.title = `${i}: ${HUMOR_HINTS[i]}`;
+        b.addEventListener('click', () => saveConfigPatch({ humorLevel: i }));
+        humorBar.appendChild(b);
+      }
+    }
+    /* Fill "on" state up to current level */
+    for (const b of humorBar.children) {
+      const lv = Number(b.dataset.level);
+      b.classList.toggle('on', lv <= level);
+    }
+  }
+
+  /* ---------- Client-side tone heuristic (auto-nudge humor level) ---------- */
+
+  function detectToneScore(text) {
+    // Returns 1-10 based on formality signals. Higher = more casual.
+    if (!text) return null;
+    const casualHits =
+      (text.match(/[ㅋㅎㅠㅜ]{1,}/g) || []).length * 2 +
+      (text.match(/\b(야|어|해|하자|간다|가자|맞아|그래|응|ㅇㅇ|ㄴㄴ|ㄱㄱ)\b/g) || []).length * 1 +
+      (text.match(/[\p{Extended_Pictographic}]/gu) || []).length * 1 +
+      (text.match(/(!!+|\?\?+|~+)/g) || []).length * 1;
+    const formalHits =
+      (text.match(/(요|습니다|입니다|해주세요|드립니다|께서|드려요|합니다)/g) || []).length * 1.5 +
+      (text.match(/(부탁|검토|확인|요청|바랍니다|주시기 바랍니다|제안)/g) || []).length * 1;
+    const raw = casualHits - formalHits;
+    // Map [-4..+4] roughly to [1..10]
+    const score = Math.max(1, Math.min(10, Math.round(5.5 + raw)));
+    return score;
+  }
+  function nudgeHumorFromUserMessage(text) {
+    const detected = detectToneScore(text);
+    if (!detected || !config) return;
+    const cur = config.humorLevel || 3;
+    // Only nudge when detected drifts materially from current, and only by 1
+    const gap = detected - cur;
+    if (Math.abs(gap) < 2) return;
+    const next = cur + Math.sign(gap);
+    saveConfigPatch({ humorLevel: next });
+  }
+
+  /* ---------- Weather + AQI (Open-Meteo, no API key) ---------- */
+
+  const WMO_EMOJI = (code) => {
+    if (code === 0) return '☀️';
+    if ([1,2,3].includes(code)) return '⛅';
+    if ([45,48].includes(code)) return '🌫️';
+    if ([51,53,55,56,57].includes(code)) return '🌦️';
+    if ([61,63,65,66,67,80,81,82].includes(code)) return '🌧️';
+    if ([71,73,75,77,85,86].includes(code)) return '❄️';
+    if ([95,96,99].includes(code)) return '⛈️';
+    return '🌡️';
+  };
+  function aqiGrade(pm25, pm10) {
+    // Korean grade: max of both pollutants' grades
+    const g25 = pm25 == null ? 0 : pm25 <= 15 ? 1 : pm25 <= 35 ? 2 : pm25 <= 75 ? 3 : 4;
+    const g10 = pm10 == null ? 0 : pm10 <= 30 ? 1 : pm10 <= 80 ? 2 : pm10 <= 150 ? 3 : 4;
+    const g = Math.max(g25, g10);
+    return ['--', '좋음', '보통', '나쁨', '매우나쁨'][g] || '--';
+  }
+  function aqiClass(label) {
+    if (label === '좋음') return 'good';
+    if (label === '보통') return 'normal';
+    if (label === '나쁨') return 'bad';
+    if (label === '매우나쁨') return 'worst';
+    return '';
+  }
+
+  async function getCoords() {
+    // Try geolocation; fallback to Seoul.
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) return resolve({ lat: 37.5665, lon: 126.9780, src: 'default' });
+      navigator.geolocation.getCurrentPosition(
+        (p) => resolve({ lat: p.coords.latitude, lon: p.coords.longitude, src: 'geo' }),
+        () => resolve({ lat: 37.5665, lon: 126.9780, src: 'default' }),
+        { timeout: 5000, maximumAge: 3600_000, enableHighAccuracy: false },
+      );
+    });
+  }
+
+  let weatherTimer = null;
+  async function refreshWeather() {
+    try {
+      weatherChip.classList.add('loading');
+      const { lat, lon } = await getCoords();
+      const [wRes, aRes] = await Promise.all([
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`).then(r=>r.json()),
+        fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=pm10,pm2_5`).then(r=>r.json()),
+      ]);
+      const temp = wRes?.current?.temperature_2m;
+      const code = wRes?.current?.weather_code;
+      const pm25 = aRes?.current?.pm2_5;
+      const pm10 = aRes?.current?.pm10;
+      const label = aqiGrade(pm25, pm10);
+      weatherChip.querySelector('.w-emoji').textContent = WMO_EMOJI(code);
+      weatherChip.querySelector('.w-temp').textContent = (temp != null ? `${Math.round(temp)}°` : '--°');
+      const aqiEl = weatherChip.querySelector('.w-aqi');
+      aqiEl.textContent = label;
+      aqiEl.className = 'w-aqi ' + aqiClass(label);
+      weatherChip.classList.remove('loading');
+      weatherChip.title = `${WMO_EMOJI(code)} 기온 ${Math.round(temp)}° · 미세먼지 ${label} (PM2.5 ${pm25 ?? '?'} / PM10 ${pm10 ?? '?'})`;
+    } catch (e) {
+      weatherChip.classList.remove('loading');
+      weatherChip.querySelector('.w-emoji').textContent = '⚠️';
+      weatherChip.querySelector('.w-temp').textContent = '--°';
+      weatherChip.querySelector('.w-aqi').textContent = 'off';
+      weatherChip.title = '날씨 정보를 못 가져왔어요: ' + (e.message || e);
+    }
+    /* Refresh every 10 minutes */
+    clearTimeout(weatherTimer);
+    weatherTimer = setTimeout(refreshWeather, 10 * 60_000);
+  }
+
+  /* ---------- Notifications (Web Notifications API) ---------- */
+
+  function canNotify() {
+    return typeof Notification !== 'undefined' && Notification.permission === 'granted';
+  }
+  async function ensureNotificationPermission() {
+    if (typeof Notification === 'undefined') return false;
+    if (Notification.permission === 'granted') return true;
+    if (Notification.permission === 'denied') return false;
+    try {
+      const p = await Notification.requestPermission();
+      return p === 'granted';
+    } catch { return false; }
+  }
+  function tabIsFocused() {
+    return typeof document !== 'undefined' && document.visibilityState === 'visible' && document.hasFocus();
+  }
+  function notifyAssistantReply(text) {
+    if (!canNotify()) return;
+    if (tabIsFocused()) return;   // don't disturb if user is already looking
+    const preview = (text || '').slice(0, 140).replace(/\s+/g, ' ').trim();
+    if (!preview) return;
+    try {
+      const n = new Notification(config?.name || '메시지', {
+        body: preview,
+        icon: config?.avatarUrl || '/icon-192.png',
+        badge: '/icon-192.png',
+        tag: 'chat-reply',
+        renotify: true,
+        silent: false,
+      });
+      n.onclick = () => { window.focus(); n.close(); };
+      setTimeout(() => { try { n.close(); } catch {} }, 15_000);
+    } catch { /* silent — some browsers throw when tab focused */ }
+  }
+  /* Ask for permission on first user send (browsers require a user gesture) */
+  let didAskNotifPermission = false;
+  async function maybeRequestNotifOnSend() {
+    if (didAskNotifPermission) return;
+    didAskNotifPermission = true;
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      await ensureNotificationPermission();
+    }
+  }
+
+  /* ---------- Boot ---------- */
+
+  hydrate();
+  connectEvents();
+  refreshWeather();
+
+  /* Reconnect SSE when page becomes visible again (mobile Safari) */
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      if (!es || es.readyState === 2 /* CLOSED */) connectEvents();
+      else hydrate();
+    }
+  });
+})();
+
+</script>
+</body>
+</html>

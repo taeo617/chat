@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.taeo.chat.tunnel</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/cloudflared</string>
+    <string>tunnel</string>
+    <string>--url</string>
+    <string>http://localhost:8787</string>
+    <string>--protocol</string>
+    <string>http2</string>
+    <string>--no-autoupdate</string>
+  </array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ThrottleInterval</key><integer>10</integer>
+  <key>StandardOutPath</key><string>/tmp/cf-tunnel.log</string>
+  <key>StandardErrorPath</key><string>/tmp/cf-tunnel.log</string>
+</dict>
+</plist>
