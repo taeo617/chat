@@ -1349,7 +1349,7 @@
   let generating = false;
   let activeAssistantId = null;    // id of the assistant message currently streaming
 
-  /* Assistants (화자) data */
+  /* Assistants (화자) data with rules */
   const ASSISTANTS = {
     minha: {
       id: 'minha',
@@ -1357,7 +1357,9 @@
       role: '비서실장',
       avatar: '/avatars/minha.png',
       color: '#5ae85d',
-      bubbleColor: 'var(--user-bubble)'
+      bubbleColor: 'var(--user-bubble)',
+      description: '비서실장. 업무 효율화, 자동화, 일정 관리, 시스템 운영을 담당. 실무적이고 실행 지향적.',
+      keywords: ['자동화', '일정', '효율', '운영', '관리', '시스템', '설정', '구조', '프로세스']
     },
     chaeyeon: {
       id: 'chaeyeon',
@@ -1365,10 +1367,28 @@
       role: '감사실장',
       avatar: '/avatars/chaeyeon.png',
       color: '#007aff',
-      bubbleColor: '#e9e9eb'
+      bubbleColor: '#e9e9eb',
+      description: '감사실장. 업무 감사, 품질 검수, 할루시네이션 감지, 검토를 담당. 비판적이고 검증 지향적.',
+      keywords: ['검토', '감사', '검증', '품질', '확인', '검사', '점검', '검수', '할루시네이션']
     }
   };
   let activeAssistant = ASSISTANTS.minha;
+
+  function selectAssistantByContext(userMessage) {
+    const messageLower = userMessage.toLowerCase();
+
+    // Count keyword matches for each assistant
+    const minhaScore = ASSISTANTS.minha.keywords.filter(kw => messageLower.includes(kw)).length;
+    const chaeyeonScore = ASSISTANTS.chaeyeon.keywords.filter(kw => messageLower.includes(kw)).length;
+
+    // If chaeyeon's keywords match more, select chaeyeon
+    if (chaeyeonScore > minhaScore && chaeyeonScore > 0) {
+      return ASSISTANTS.chaeyeon;
+    }
+
+    // Default to minha for general tasks
+    return ASSISTANTS.minha;
+  }
 
   /* Team members data */
   const TEAM_MEMBERS = [
@@ -1828,6 +1848,13 @@
     const text = inputEl.value.trim();
     const atts = pendingAtts.slice();
     if ((!text && atts.length === 0) || generating) return;
+
+    /* Auto-select assistant based on message context */
+    if (text) {
+      const selectedAssistant = selectAssistantByContext(text);
+      updateHeaderForAssistant(selectedAssistant);
+    }
+
     clearError();
     /* Optimistically clear composer; server broadcast will render the message */
     inputEl.value = '';
