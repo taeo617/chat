@@ -987,6 +987,139 @@
     border-top: 1px solid var(--border);
     padding-top: 8px;
   }
+  .team-card {
+    cursor: pointer;
+  }
+  .team-card:active {
+    opacity: 0.8;
+  }
+
+  /* Team Edit Modal */
+  #team-edit-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.4);
+    display: none;
+    align-items: flex-end;
+    z-index: 60;
+  }
+  #team-edit-modal.open {
+    display: flex;
+  }
+  #team-edit-modal-content {
+    width: 100%;
+    max-width: 600px;
+    background: var(--bg);
+    border-radius: 20px 20px 0 0;
+    padding: max(env(safe-area-inset-bottom), 16px) 16px 16px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp .3s ease;
+  }
+  #team-edit-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  #team-edit-modal-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+  }
+  #team-edit-modal-close {
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    color: var(--text-secondary);
+    transition: background .15s ease;
+  }
+  #team-edit-modal-close:hover {
+    background: var(--bg-elev);
+  }
+  #team-edit-modal-close svg {
+    width: 20px;
+    height: 20px;
+  }
+  .team-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .form-group label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    transition: border-color .2s ease;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+  }
+  .form-group textarea {
+    resize: vertical;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .form-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .btn-primary,
+  .btn-secondary {
+    flex: 1;
+    padding: 12px;
+    border: 0;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s ease;
+  }
+  .btn-primary {
+    background: var(--blue);
+    color: white;
+  }
+  .btn-primary:active {
+    background: var(--blue-pressed);
+  }
+  .btn-secondary {
+    background: var(--bg-elev);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:active {
+    background: var(--border);
+  }
 
   /* Avatar lightbox — tap the small circle to see the full portrait */
   #avatar-lightbox {
@@ -1106,23 +1239,47 @@
       <div id="team-modal-content">
         <div id="team-modal-header">
           <h2>팀 구성원</h2>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <div id="team-view-toggle" style="display: flex; background: var(--bg-elev); border-radius: 8px; padding: 4px;">
-              <button id="team-view-gallery" class="view-toggle-btn active" type="button" aria-label="갤러리 보기" title="갤러리 보기">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-              </button>
-              <button id="team-view-list" class="view-toggle-btn" type="button" aria-label="리스트 보기" title="리스트 보기">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
-              </button>
-            </div>
-            <button id="team-modal-close" type="button" aria-label="닫기">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-            </button>
-          </div>
+          <button id="team-modal-close" type="button" aria-label="닫기">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
         </div>
-        <div class="team-grid" id="team-grid">
+        <div class="team-grid list-view" id="team-grid">
           <!-- Filled by JavaScript -->
         </div>
+      </div>
+    </div>
+
+    <div id="team-edit-modal" role="dialog" aria-label="팀원 편집">
+      <div id="team-edit-modal-content">
+        <div id="team-edit-modal-header">
+          <h2 id="team-edit-name">팀원 편집</h2>
+          <button id="team-edit-modal-close" type="button" aria-label="닫기">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <form id="team-edit-form" class="team-edit-form">
+          <div class="form-group">
+            <label for="edit-model">AI 모델 선택</label>
+            <select id="edit-model" required>
+              <option value="">선택하세요</option>
+              <option value="claude-opus">Claude Opus (고성능)</option>
+              <option value="claude-sonnet">Claude Sonnet (균형)</option>
+              <option value="claude-haiku">Claude Haiku (빠름)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="edit-department">소속</label>
+            <input type="text" id="edit-department" required />
+          </div>
+          <div class="form-group">
+            <label for="edit-guidelines">지침</label>
+            <textarea id="edit-guidelines" rows="4" required></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="button" id="team-edit-cancel" class="btn-secondary">취소</button>
+            <button type="submit" class="btn-primary">저장</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -1238,9 +1395,11 @@
   const teamModal = $('#team-modal');
   const teamModalClose = $('#team-modal-close');
   const teamGrid = $('#team-grid');
-  const teamViewGallery = $('#team-view-gallery');
-  const teamViewList = $('#team-view-list');
-  let teamViewMode = 'gallery'; // 'gallery' or 'list'
+  const teamEditModal = $('#team-edit-modal');
+  const teamEditModalClose = $('#team-edit-modal-close');
+  const teamEditForm = $('#team-edit-form');
+  const teamEditCancel = $('#team-edit-cancel');
+  let currentEditingMemberId = null;
   const themeBtn = $('#theme-btn');
   const themeIcon = $('#theme-icon');
   const weatherChip = $('#weather-chip');
@@ -1889,10 +2048,9 @@
 
   /* Team Modal */
   function renderTeamGrid() {
-    const isListView = teamViewMode === 'list';
-    teamGrid.className = `team-grid ${isListView ? 'list-view' : ''}`;
+    teamGrid.className = 'team-grid list-view';
     teamGrid.innerHTML = TEAM_MEMBERS.map(member => `
-      <div class="team-card">
+      <div class="team-card" data-member-id="${member.id}">
         <div class="team-card-avatar">
           ${member.avatar ? `<img src="${member.avatar}" alt="${member.name}" />` : member.name[0]}
         </div>
@@ -1905,17 +2063,14 @@
         </div>
       </div>
     `).join('');
-  }
-  function switchTeamView(mode) {
-    teamViewMode = mode;
-    if (mode === 'gallery') {
-      teamViewGallery.classList.add('active');
-      teamViewList.classList.remove('active');
-    } else {
-      teamViewList.classList.add('active');
-      teamViewGallery.classList.remove('active');
-    }
-    renderTeamGrid();
+
+    // Add click listeners to team cards
+    document.querySelectorAll('.team-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const memberId = parseInt(card.dataset.memberId);
+        openTeamEditModal(memberId);
+      });
+    });
   }
   function openTeamModal() {
     renderTeamGrid();
@@ -1924,12 +2079,41 @@
   function closeTeamModal() {
     teamModal.classList.remove('open');
   }
+  function openTeamEditModal(memberId) {
+    const member = TEAM_MEMBERS.find(m => m.id === memberId);
+    if (!member) return;
+
+    currentEditingMemberId = memberId;
+    $('#team-edit-name').textContent = member.name;
+    $('#edit-model').value = member.model || '';
+    $('#edit-department').value = member.department;
+    $('#edit-guidelines').value = member.guidelines;
+    teamEditModal.classList.add('open');
+  }
+  function closeTeamEditModal() {
+    teamEditModal.classList.remove('open');
+    currentEditingMemberId = null;
+  }
   teamBtn.addEventListener('click', openTeamModal);
   teamModalClose.addEventListener('click', closeTeamModal);
-  teamViewGallery.addEventListener('click', () => switchTeamView('gallery'));
-  teamViewList.addEventListener('click', () => switchTeamView('list'));
+  teamEditModalClose.addEventListener('click', closeTeamEditModal);
+  teamEditCancel.addEventListener('click', closeTeamEditModal);
+  teamEditForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const member = TEAM_MEMBERS.find(m => m.id === currentEditingMemberId);
+    if (member) {
+      member.model = $('#edit-model').value;
+      member.department = $('#edit-department').value;
+      member.guidelines = $('#edit-guidelines').value;
+    }
+    closeTeamEditModal();
+    renderTeamGrid();
+  });
   teamModal.addEventListener('click', (e) => {
     if (e.target === teamModal) closeTeamModal();
+  });
+  teamEditModal.addEventListener('click', (e) => {
+    if (e.target === teamEditModal) closeTeamEditModal();
   });
   $('#menu-new').addEventListener('click', () => { closeMenu(); newChat(); });
   $('#menu-settings').addEventListener('click', () => { closeMenu(); openSettings(); });
