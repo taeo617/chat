@@ -1377,7 +1377,7 @@
   function selectAssistantByContext(userMessage) {
     const messageLower = userMessage.toLowerCase();
 
-    // Check for explicit name mentions (direct calls have priority)
+    // Check for explicit name mentions (direct calls have absolute priority)
     if (messageLower.includes('민하') || messageLower.includes('비서실장')) {
       return ASSISTANTS.minha;
     }
@@ -1385,17 +1385,8 @@
       return ASSISTANTS.chaeyeon;
     }
 
-    // Count keyword matches for each assistant
-    const minhaScore = ASSISTANTS.minha.keywords.filter(kw => messageLower.includes(kw)).length;
-    const chaeyeonScore = ASSISTANTS.chaeyeon.keywords.filter(kw => messageLower.includes(kw)).length;
-
-    // If chaeyeon's keywords match more, select chaeyeon
-    if (chaeyeonScore > minhaScore && chaeyeonScore > 0) {
-      return ASSISTANTS.chaeyeon;
-    }
-
-    // Default to minha for general tasks
-    return ASSISTANTS.minha;
+    // If no explicit call, stick with current assistant (don't auto-switch)
+    return activeAssistant;
   }
 
   /* Team members data */
