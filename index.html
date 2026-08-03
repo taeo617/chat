@@ -1291,6 +1291,26 @@
     <img id="avatar-lightbox-img" alt="프로필 사진 크게 보기" />
   </div>
 
+  <!-- Speaker selection popup -->
+  <div id="speaker-popup" style="display: none; position: fixed; top: 60px; left: 50%; transform: translateX(-50%); background: white; border: 1px solid #ddd; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; min-width: 200px; overflow: hidden;">
+    <div style="padding: 8px;">
+      <button id="speaker-minha" type="button" style="width: 100%; padding: 10px 12px; border: none; background: none; text-align: left; cursor: pointer; border-radius: 8px; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: background 0.2s;">
+        <span style="width: 28px; height: 28px; border-radius: 50%; background: #5ae85d; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;">민</span>
+        <div style="flex: 1;">
+          <div style="font-weight: 600;">민하</div>
+          <div style="font-size: 12px; color: #666;">비서실장</div>
+        </div>
+      </button>
+      <button id="speaker-chaeyeon" type="button" style="width: 100%; padding: 10px 12px; border: none; background: none; text-align: left; cursor: pointer; border-radius: 8px; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: background 0.2s;">
+        <span style="width: 28px; height: 28px; border-radius: 50%; background: #007aff; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;">채</span>
+        <div style="flex: 1;">
+          <div style="font-weight: 600;">채연</div>
+          <div style="font-size: 12px; color: #666;">감사실장</div>
+        </div>
+      </button>
+    </div>
+  </div>
+
   <div class="backdrop" id="settings-backdrop">
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="settings-title">
       <div class="sheet-handle"></div>
@@ -1920,11 +1940,14 @@
         }),
       });
       if (res.status === 409) {
+        inputEl.value = text; // 복원
         showError('이미 응답 중이에요. 잠시만요.');
       } else if (!res.ok) {
+        inputEl.value = text; // 복원
         showError(`서버 오류 (${res.status})`);
       }
     } catch (e) {
+      inputEl.value = text; // 복원
       showError(e.message || '네트워크 오류');
     }
   }
@@ -2289,6 +2312,49 @@ ${member.guidelines}
   $('#menu-new').addEventListener('click', () => { closeMenu(); newChat(); });
   $('#menu-settings').addEventListener('click', () => { closeMenu(); openSettings(); });
   $('#menu-wipe').addEventListener('click', () => { closeMenu(); wipeAll(); });
+
+  /* Header profile interactions */
+  headerAvatar.style.cursor = 'pointer';
+  headerAvatar.addEventListener('click', () => {
+    const img = headerAvatar.querySelector('img');
+    if (img) {
+      $('#avatar-lightbox-img').src = img.src;
+      $('#avatar-lightbox').style.display = 'flex';
+    }
+  });
+
+  $('#avatar-lightbox').addEventListener('click', (e) => {
+    if (e.target === $('#avatar-lightbox') || e.target === $('#avatar-lightbox-img')) {
+      $('#avatar-lightbox').style.display = 'none';
+    }
+  });
+
+  /* Header name click — show speaker selector */
+  const headerNameWrap = $('#header-name-wrap');
+  const speakerPopup = $('#speaker-popup');
+  headerNameWrap.style.cursor = 'pointer';
+  headerNameWrap.addEventListener('click', (e) => {
+    e.stopPropagation();
+    speakerPopup.style.display = speakerPopup.style.display === 'none' ? 'flex' : 'none';
+  });
+
+  $('#speaker-minha').addEventListener('click', () => {
+    activeAssistant = ASSISTANTS.minha;
+    updateHeaderForAssistant(ASSISTANTS.minha);
+    speakerPopup.style.display = 'none';
+  });
+
+  $('#speaker-chaeyeon').addEventListener('click', () => {
+    activeAssistant = ASSISTANTS.chaeyeon;
+    updateHeaderForAssistant(ASSISTANTS.chaeyeon);
+    speakerPopup.style.display = 'none';
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#header-name-wrap') && !e.target.closest('#speaker-popup')) {
+      speakerPopup.style.display = 'none';
+    }
+  });
 
   /* Notification permission — request or explain based on current state */
   const menuNotifBtn = $('#menu-notif');
