@@ -1,28 +1,45 @@
 #!/usr/bin/env node
 /**
- * Daily Diary Generator - Minha's Secretary Log
- * Runs at 11:30 PM to summarize the day's conversation
+ * Generate diary for past dates
+ * Usage: node generate-past-diary.mjs 2026-08-02
  */
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ROOT = new URL('.', import.meta.url).pathname.replace(/\/$/, '');
 const STATE_FILE = join(ROOT, '..', '.state.json');
 const DIARY_DIR = join(ROOT, '..', '..', 'Obsidian/민하의-세컨드-브레인/민하 비서실장 일기');
 
+const targetDate = process.argv[2] || new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
 try {
+  // Ensure diary directory exists
+  if (!existsSync(DIARY_DIR)) {
+    mkdirSync(DIARY_DIR, { recursive: true });
+  }
+
   const stateJson = readFileSync(STATE_FILE, 'utf8');
   const state = JSON.parse(stateJson);
   const messages = state.messages || [];
 
-  if (messages.length === 0) {
-    console.log('ℹ No conversation today - skipping diary');
+  // Filter messages for target date
+  const targetMessages = messages.filter(msg => {
+    const msgDate = new Date(msg.createdAt).toISOString().split('T')[0];
+    return msgDate === targetDate;
+  });
+
+  if (targetMessages.length === 0) {
+    console.log(`❌ No messages found for ${targetDate}`);
     process.exit(0);
   }
 
-  // Summarize today's conversation
-  const userMessages = messages.filter(m => m.role === 'user').map(m => m.text).slice(-10);
+  // Extract user messages
+  const userMessages = targetMessages
+    .filter(m => m.role === 'user')
+    .map(m => m.text);
+
+  // Determine mood and keywords
   const hasDifficulty = userMessages.some(m =>
     m.includes('어려움') || m.includes('실패') || m.includes('문제')
   );
@@ -34,14 +51,12 @@ try {
   const keywords = [];
   if (hasSuccess) keywords.push('성공');
   if (hasDifficulty) keywords.push('도전');
-  keywords.push('학습', '효율화', '자동화');
+  keywords.push('학습', '효율화');
 
-  const today = new Date();
-  const dateStr = today.toISOString().split('T')[0];
-  const title = `${dateStr} - 생산성 있는 하루`;
+  const title = `${targetDate} - 생산성 있는 하루`;
 
   const diary = `---
-date: ${dateStr}
+date: ${targetDate}
 mood: ${mood}
 keywords: ${keywords.join(', ')}
 ---
@@ -58,7 +73,7 @@ ${mood}
 <details open>
 <summary><strong>📋 주요사건</strong></summary>
 
-오늘 Claude와 함께 다음 작업을 진행했습니다:
+Claude와 함께 다음 작업을 진행했습니다:
 
 ${userMessages.map(m => `- ${m.substring(0, 80)}${m.length > 80 ? '...' : ''}`).join('\n')}
 
@@ -85,15 +100,19 @@ ${userMessages.map(m => `- ${m.substring(0, 80)}${m.length > 80 ? '...' : ''}`).
 </details>
 
 ---
-*작성 시간: ${new Date().toLocaleString('ko-KR')}*
+*생성 시간: ${new Date().toLocaleString('ko-KR')}*
+*메시지 수: ${targetMessages.length}*
 `;
 
-  const filename = `${dateStr}.md`;
+  const filename = `${targetDate}.md`;
   const filepath = join(DIARY_DIR, filename);
   writeFileSync(filepath, diary);
 
-  console.log(`✓ Daily diary created: ${filename}`);
+  console.log(`✅ Diary created: ${filename}`);
+  console.log(`📝 Messages: ${targetMessages.length}`);
+  console.log(`😊 Mood: ${mood}`);
+  console.log(`🏷️  Keywords: ${keywords.join(', ')}`);
 } catch (err) {
-  console.error('❌ Diary creation failed:', err.message);
+  console.error('❌ Diary generation failed:', err.message);
   process.exit(1);
 }
