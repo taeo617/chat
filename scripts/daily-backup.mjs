@@ -49,12 +49,17 @@ try {
     console.log('✓ No changes to commit');
   }
 
-  // Push to remote
+  // Push to remote (optional - only if configured)
   try {
-    execSync('git push origin master', { stdio: 'inherit' });
-    console.log('✓ Pushed to GitHub');
+    const remotes = execSync('git remote -v').toString();
+    if (remotes.includes('origin')) {
+      execSync('git push origin master', { stdio: 'inherit' });
+      console.log('✓ Pushed to GitHub');
+    } else {
+      console.log('ℹ No remote repository configured - local backup only');
+    }
   } catch (e) {
-    console.warn('⚠ Push failed - working offline?');
+    console.warn('⚠ Push failed - continuing with local backup');
   }
 
   // Record backup log

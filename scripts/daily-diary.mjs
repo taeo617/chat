@@ -17,7 +17,7 @@ try {
   const messages = state.messages || [];
 
   if (messages.length === 0) {
-    console.log('❌ No conversation today - skipping diary');
+    console.log('ℹ No conversation today - skipping diary');
     process.exit(0);
   }
 
