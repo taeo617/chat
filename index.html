@@ -1635,8 +1635,7 @@
     if (messages.length === 0 && !generating) {
       const empty = document.createElement('div');
       empty.className = 'empty';
-      empty.innerHTML = `<p>아래에 메시지를 입력해 대화를 시작하세요.</p>
-        <p class="sub">Claude Pro 구독으로 동작. 폰·맥에서 실시간 공유됨.</p>`;
+      empty.innerHTML = ''; // 빈 화면
       messagesEl.appendChild(empty);
       return;
     }
@@ -2134,7 +2133,15 @@
   /* ---------- Wire ---------- */
 
   composerForm.addEventListener('submit', (e) => { e.preventDefault(); send(); });
-  inputEl.addEventListener('input', renderComposer);
+  inputEl.addEventListener('input', () => {
+    renderComposer();
+    // Real-time speaker detection while typing
+    const text = inputEl.value.trim();
+    if (text) {
+      const selectedAssistant = selectAssistantByContext(text);
+      updateHeaderForAssistant(selectedAssistant);
+    }
+  });
   inputEl.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); }
   });
