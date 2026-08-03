@@ -1706,12 +1706,35 @@
         header.style.marginBottom = '6px';
         header.style.paddingBottom = '6px';
         header.style.borderBottom = '1px solid rgba(0,0,0,0.1)';
-        header.innerHTML = `
-          <span style="width: 24px; height: 24px; border-radius: 50%; background: ${speaker.color}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;">
-            ${speaker.name[0]}
-          </span>
-          <strong style="color: ${speaker.color}; font-size: 13px;">${speaker.name} (${speaker.role})</strong>
+
+        // Profile image element
+        const profileImg = document.createElement('img');
+        profileImg.src = speaker.avatar;
+        profileImg.alt = speaker.name;
+        profileImg.style.width = '28px';
+        profileImg.style.height = '28px';
+        profileImg.style.borderRadius = '50%';
+        profileImg.style.objectFit = 'cover';
+        profileImg.style.cursor = 'pointer';
+        profileImg.style.border = `2px solid ${speaker.color}`;
+        profileImg.addEventListener('click', (e) => {
+          e.stopPropagation();
+          $('#avatar-lightbox-img').src = speaker.avatar;
+          $('#avatar-lightbox').style.display = 'flex';
+        });
+
+        // Text info
+        const textInfo = document.createElement('div');
+        textInfo.style.display = 'flex';
+        textInfo.style.flexDirection = 'column';
+        textInfo.style.gap = '1px';
+        textInfo.innerHTML = `
+          <strong style="color: ${speaker.color}; font-size: 13px;">${speaker.name}</strong>
+          <span style="font-size: 11px; color: #999;">${speaker.role}</span>
         `;
+
+        header.appendChild(profileImg);
+        header.appendChild(textInfo);
         bubble.appendChild(header);
       }
       if (isEmpty) {
@@ -2323,9 +2346,9 @@ ${member.guidelines}
   /* Header profile interactions */
   headerAvatar.style.cursor = 'pointer';
   headerAvatar.addEventListener('click', () => {
-    const img = headerAvatar.querySelector('img');
-    if (img) {
-      $('#avatar-lightbox-img').src = img.src;
+    // Show the current active assistant's profile image
+    if (activeAssistant && activeAssistant.avatar) {
+      $('#avatar-lightbox-img').src = activeAssistant.avatar;
       $('#avatar-lightbox').style.display = 'flex';
     }
   });
