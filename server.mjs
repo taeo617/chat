@@ -586,6 +586,121 @@ const server = createServer(async (req, res) => {
       return res.end(JSON.stringify(state.config));
     }
 
+    /* --------- Execute shell commands (full local permissions) --------- */
+    if (req.method === 'POST' && req.url === '/api/execute') {
+      let body;
+      try { body = await readBody(req); }
+      catch (e) { res.writeHead(413); return res.end(e.message); }
+      let payload;
+      try { payload = JSON.parse(body); }
+      catch { res.writeHead(400); return res.end('bad json'); }
+
+      const { command } = payload;
+      if (!command) { res.writeHead(400); return res.end('command required'); }
+
+      try {
+        const result = await new Promise((resolve, reject) => {
+          const child = spawn('bash', ['-c', command], {
+            stdio: ['pipe', 'pipe', 'pipe'],
+            cwd: process.env.HOME,
+          });
+          let stdout = '', stderr = '';
+          child.stdout.on('data', d => stdout += d.toString());
+          child.stderr.on('data', d => stderr += d.toString());
+          child.on('close', code => {
+            resolve({ stdout, stderr, code });
+          });
+          child.on('error', reject);
+        });
+
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(JSON.stringify(result));
+      } catch (e) {
+        res.writeHead(500, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ error: e.message }));
+      }
+      return;
+    }
+
+    /* --------- Write file (full local permissions) --------- */
+    if (req.method === 'POST' && req.url === '/api/write-file') {
+      let body;
+      try { body = await readBody(req); }
+      catch (e) { res.writeHead(413); return res.end(e.message); }
+      let payload;
+      try { payload = JSON.parse(body); }
+      catch { res.writeHead(400); return res.end('bad json'); }
+
+      const { path, content } = payload;
+      if (!path || content === undefined) {
+        res.writeHead(400);
+        return res.end('path and content required');
+      }
+
+      try {
+        const fullPath = path.startsWith('/') ? path : join(process.env.HOME, path);
+        await mkdir(dirname(fullPath), { recursive: true });
+        await writeFile(fullPath, content);
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ success: true, path: fullPath }));
+      } catch (e) {
+        res.writeHead(500, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ error: e.message }));
+      }
+      return;
+    }
+
+    /* --------- Save to Notion (full local permissions) --------- */
+    if (req.method === 'POST' && req.url === '/api/notion-save') {
+      let body;
+      try { body = await readBody(req); }
+      catch (e) { res.writeHead(413); return res.end(e.message); }
+      let payload;
+      try { payload = JSON.parse(body); }
+      catch { res.writeHead(400); return res.end('bad json'); }
+
+      const { title, date, mood, keywords, content, apiKey, databaseId } = payload;
+      if (!apiKey || !databaseId) {
+        res.writeHead(400);
+        return res.end('apiKey and databaseId required');
+      }
+
+      try {
+        const dbId = databaseId.replace(/-/g, '');
+        const response = await fetch('https://api.notion.com/v1/pages', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Notion-Version': '2022-06-28',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            parent: { database_id: dbId },
+            properties: {
+              '제목': { title: [{ text: { content: title || '제목 없음' } }] },
+              '날짜': date ? { date: { start: date } } : undefined,
+              '기분': mood ? { select: { name: mood } } : undefined,
+              '키워드': keywords ? { multi_select: keywords.split(',').map(k => ({ name: k.trim() })) } : undefined,
+              '내용': content ? { rich_text: [{ text: { content } }] } : undefined,
+            },
+          }),
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+          res.writeHead(500, { 'content-type': 'application/json' });
+          res.end(JSON.stringify({ error: result.message || 'Notion API error' }));
+        } else {
+          res.writeHead(200, { 'content-type': 'application/json' });
+          res.end(JSON.stringify({ success: true, pageUrl: result.url }));
+        }
+      } catch (e) {
+        res.writeHead(500, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ error: e.message }));
+      }
+      return;
+    }
+
     res.writeHead(404);
     res.end();
   } catch (e) {
