@@ -165,7 +165,7 @@
   .header-inner {
     display: grid;
     grid-template-columns: auto 1fr auto;
-    align-items: center;
+    align-items: flex-end;
     gap: 12px;
     min-height: 68px;
     max-width: 100%;
@@ -196,7 +196,7 @@
     grid-column: 3;
     justify-self: end;
     display: flex;
-    flex-direction: column;
+    flex-direction: column-reverse;
     align-items: flex-end;
     gap: 4px;
   }
@@ -599,16 +599,17 @@
     color: var(--text);
     font: inherit;
     font-size: 16px;
-    line-height: 1.2;
+    line-height: 1.4;
     resize: none;
-    padding: 0;
-    height: 22px;
-    max-height: 22px;
+    padding: 8px 0;
     min-height: 22px;
+    max-height: 200px;
     font-family: inherit;
-    overflow-y: hidden;
-    overflow-x: auto;
-    white-space: pre;
+    overflow-y: auto;
+    overflow-x: hidden;
+    white-space: normal;
+    word-wrap: break-word;
+    word-break: break-word;
   }
   .composer-input::placeholder { color: var(--text-muted); }
   .composer-right-btn {
@@ -1156,7 +1157,7 @@
   <div id="app">
     <header>
       <div class="header-inner">
-        <div style="display: flex; align-items: center; gap: 0;">
+        <div style="display: flex; align-items: flex-end; gap: 0;">
           <button id="menu-btn" class="icon-btn" type="button" aria-label="메뉴" aria-haspopup="menu" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
           </button>
@@ -1168,17 +1169,10 @@
           <div class="header-avatar" id="header-avatar"></div>
           <div class="header-name" id="header-name-wrap">
             <span id="header-name"></span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
           </div>
           <div class="header-role" id="header-role"></div>
         </div>
         <div id="header-right">
-          <button id="admin-btn" class="icon-btn" type="button" aria-label="관리 패널">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>
-          </button>
-          <button id="theme-btn" class="icon-btn" type="button" aria-label="라이트/다크 모드 전환">
-            <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
-          </button>
           <div id="weather-chip" class="loading" title="현재 날씨·미세먼지">
             <span class="w-emoji">⏳</span>
             <span class="w-temp">--°</span>
@@ -1207,6 +1201,10 @@
           <div class="menu-humor-hint" id="humor-hint">정중·실무적 (기본)</div>
         </div>
         <div class="menu-sep"></div>
+        <button type="button" class="menu-item" id="menu-theme">
+          <svg id="menu-theme-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+          <span id="menu-theme-label">라이트 모드</span>
+        </button>
         <button type="button" class="menu-item" id="menu-notif">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2c0 .53-.21 1.04-.59 1.4L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg>
           <span id="menu-notif-label">알림 켜기</span>
@@ -1294,72 +1292,7 @@
     <img id="avatar-lightbox-img" alt="프로필 사진 크게 보기" />
   </div>
 
-  <!-- Speaker selection popup -->
-  <div id="speaker-popup" style="display: none; position: fixed; top: 60px; left: 50%; transform: translateX(-50%); background: white; border: 1px solid #ddd; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; min-width: 200px; overflow: hidden;">
-    <div style="padding: 8px;">
-      <button id="speaker-minha" type="button" style="width: 100%; padding: 10px 12px; border: none; background: none; text-align: left; cursor: pointer; border-radius: 8px; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: background 0.2s;">
-        <span style="width: 28px; height: 28px; border-radius: 50%; background: #5ae85d; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;">민</span>
-        <div style="flex: 1;">
-          <div style="font-weight: 600;">민하</div>
-          <div style="font-size: 12px; color: #666;">비서실장</div>
-        </div>
-      </button>
-      <button id="speaker-chaeyeon" type="button" style="width: 100%; padding: 10px 12px; border: none; background: none; text-align: left; cursor: pointer; border-radius: 8px; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: background 0.2s;">
-        <span style="width: 28px; height: 28px; border-radius: 50%; background: #007aff; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;">채</span>
-        <div style="flex: 1;">
-          <div style="font-weight: 600;">채연</div>
-          <div style="font-size: 12px; color: #666;">감사실장</div>
-        </div>
-      </button>
-    </div>
-  </div>
-
   <!-- Admin Panel Modal -->
-  <div id="admin-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; padding: 20px;">
-    <div style="background: white; border-radius: 12px; max-width: 500px; margin: 50px auto; padding: 24px; max-height: 80vh; overflow-y: auto;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="margin: 0; font-size: 20px;">🎛️ 관리 패널</h2>
-        <button onclick="document.getElementById('admin-modal').style.display='none'" style="background: none; border: none; font-size: 24px; cursor: pointer;">×</button>
-      </div>
-
-      <div style="display: grid; gap: 12px;">
-        <!-- Notion Save -->
-        <div style="padding: 16px; background: #f5f5f5; border-radius: 8px;">
-          <h3 style="margin: 0 0 12px 0; font-size: 14px;">📝 Notion에 저장</h3>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
-            <input type="date" id="admin-diary-date" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1;">
-          </div>
-          <button onclick="adminSaveDiaryToNotion()" style="width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">저장</button>
-          <div id="admin-notion-status" style="margin-top: 8px; font-size: 12px; color: #666;"></div>
-        </div>
-
-        <!-- Generate Diary -->
-        <div style="padding: 16px; background: #f5f5f5; border-radius: 8px;">
-          <h3 style="margin: 0 0 12px 0; font-size: 14px;">📖 일기 생성</h3>
-          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-            <input type="date" id="admin-gen-date" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1;">
-          </div>
-          <button onclick="adminGenerateDiary()" style="width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">생성</button>
-          <div id="admin-gen-status" style="margin-top: 8px; font-size: 12px; color: #666;"></div>
-        </div>
-
-        <!-- Run Backup -->
-        <div style="padding: 16px; background: #f5f5f5; border-radius: 8px;">
-          <h3 style="margin: 0 0 12px 0; font-size: 14px;">💾 백업 실행</h3>
-          <button onclick="adminRunBackup()" style="width: 100%; padding: 10px; background: #ffc107; color: #333; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">지금 백업</button>
-          <div id="admin-backup-status" style="margin-top: 8px; font-size: 12px; color: #666;"></div>
-        </div>
-
-        <!-- Automation Status -->
-        <div style="padding: 16px; background: #f5f5f5; border-radius: 8px;">
-          <h3 style="margin: 0 0 12px 0; font-size: 14px;">⚙️ 자동화 상태</h3>
-          <button onclick="adminCheckAutomation()" style="width: 100%; padding: 10px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">상태 확인</button>
-          <div id="admin-automation-status" style="margin-top: 8px; font-size: 12px; color: #666; white-space: pre-wrap; max-height: 200px; overflow-y: auto;"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <div class="backdrop" id="settings-backdrop">
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="settings-title">
       <div class="sheet-handle"></div>
@@ -1460,17 +1393,18 @@
   };
   let activeAssistant = ASSISTANTS.minha;
 
-  function selectAssistantByContext(userMessage) {
+  /* Returns 'minha' | 'chaeyeon' | null — null means no explicit name-call in THIS message. */
+  function detectExplicitSpeaker(userMessage) {
     const messageLower = userMessage.toLowerCase();
+    // Check for 채연 first (priority to avoid confusion)
+    if (messageLower.includes('채연') || messageLower.includes('감사실장')) return 'chaeyeon';
+    if (messageLower.includes('민하') || messageLower.includes('비서실장')) return 'minha';
+    return null;
+  }
 
-    // Check for explicit name mentions (direct calls have absolute priority)
-    if (messageLower.includes('민하') || messageLower.includes('비서실장')) {
-      return ASSISTANTS.minha;
-    }
-    if (messageLower.includes('채연') || messageLower.includes('감사실장')) {
-      return ASSISTANTS.chaeyeon;
-    }
-
+  function selectAssistantByContext(userMessage) {
+    const explicit = detectExplicitSpeaker(userMessage);
+    if (explicit) return ASSISTANTS[explicit];
     // If no explicit call, stick with current assistant (don't auto-switch)
     return activeAssistant;
   }
@@ -1532,8 +1466,9 @@
   const teamEditForm = $('#team-edit-form');
   const teamEditCancel = $('#team-edit-cancel');
   let currentEditingMemberId = null;
-  const themeBtn = $('#theme-btn');
-  const themeIcon = $('#theme-icon');
+  const themeBtn = $('#menu-theme');
+  const themeIcon = $('#menu-theme-icon');
+  const themeLabel = $('#menu-theme-label');
   const weatherChip = $('#weather-chip');
   const humorBar = $('#humor-bar');
   const humorNum = $('#humor-num');
@@ -1744,9 +1679,9 @@
         + (isEmpty ? ' empty' : '')
         + (noText ? ' no-text' : '');
 
-      // Add speaker header for assistant messages
-      if (m.role === 'assistant' && m.speaker) {
-        const speaker = m.speaker === 'minha' ? ASSISTANTS.minha : ASSISTANTS.chaeyeon;
+      // Add speaker header for assistant messages (always shown; defaults to 민하 when speaker is unset)
+      if (m.role === 'assistant') {
+        const speaker = m.speaker === 'chaeyeon' ? ASSISTANTS.chaeyeon : ASSISTANTS.minha;
         const header = document.createElement('div');
         header.className = 'bubble-speaker-header';
         header.style.display = 'flex';
@@ -1983,7 +1918,9 @@
     if ((!text && atts.length === 0) || generating) return;
 
     /* Auto-select assistant based on message context */
+    let explicitSpeaker = null;
     if (text) {
+      explicitSpeaker = detectExplicitSpeaker(text);
       const selectedAssistant = selectAssistantByContext(text);
       updateHeaderForAssistant(selectedAssistant);
     }
@@ -2005,6 +1942,7 @@
         body: JSON.stringify({
           prompt: text,
           speaker: activeAssistant.id,
+          speakerExplicit: !!explicitSpeaker,
           attachments: atts.length
             ? atts.map((a) => ({ name: a.name, mime: a.mime, dataUrl: a.dataUrl }))
             : undefined,
@@ -2278,6 +2216,7 @@
     document.documentElement.setAttribute('data-theme', t);
     themeIcon.innerHTML = `<path d="${THEME_ICONS[t]}"/>`;
     themeIcon.setAttribute('fill', t === 'dark' ? 'currentColor' : 'none');
+    if (themeLabel) themeLabel.textContent = t === 'dark' ? '라이트 모드' : '다크 모드';
     /* Update the browser chrome color meta for iOS PWA */
     const meta = document.querySelector('meta[name="theme-color"]:not([media])');
     if (!meta) {
@@ -2408,32 +2347,7 @@ ${member.guidelines}
     }
   });
 
-  /* Header name click — show speaker selector */
-  const headerNameWrap = $('#header-name-wrap');
-  const speakerPopup = $('#speaker-popup');
-  headerNameWrap.style.cursor = 'pointer';
-  headerNameWrap.addEventListener('click', (e) => {
-    e.stopPropagation();
-    speakerPopup.style.display = speakerPopup.style.display === 'none' ? 'flex' : 'none';
-  });
-
-  $('#speaker-minha').addEventListener('click', () => {
-    activeAssistant = ASSISTANTS.minha;
-    updateHeaderForAssistant(ASSISTANTS.minha);
-    speakerPopup.style.display = 'none';
-  });
-
-  $('#speaker-chaeyeon').addEventListener('click', () => {
-    activeAssistant = ASSISTANTS.chaeyeon;
-    updateHeaderForAssistant(ASSISTANTS.chaeyeon);
-    speakerPopup.style.display = 'none';
-  });
-
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('#header-name-wrap') && !e.target.closest('#speaker-popup')) {
-      speakerPopup.style.display = 'none';
-    }
-  });
+  /* Header name — speaker selector disabled (탭해서 화자 수동 변경 불가, 자동 감지만 사용) */
 
   /* Notification permission — request or explain based on current state */
   const menuNotifBtn = $('#menu-notif');
@@ -2445,7 +2359,7 @@ ${member.guidelines}
       return;
     }
     const p = Notification.permission;
-    if (p === 'granted') menuNotifLabel.textContent = '알림 켜짐 ✓ (테스트)';
+    if (p === 'granted') menuNotifLabel.textContent = '알림 켜짐 ✓';
     else if (p === 'denied') menuNotifLabel.textContent = '알림 차단됨 — 브라우저 설정에서 허용';
     else menuNotifLabel.textContent = '알림 켜기';
   }
@@ -2680,100 +2594,6 @@ ${member.guidelines}
     }
   });
 
-  /* ========== Admin Panel Functions ========== */
-  document.getElementById('admin-btn').addEventListener('click', () => {
-    document.getElementById('admin-modal').style.display = 'block';
-    document.getElementById('admin-diary-date').valueAsDate = new Date();
-    document.getElementById('admin-gen-date').valueAsDate = new Date();
-  });
-
-  async function adminSaveDiaryToNotion() {
-    const date = document.getElementById('admin-diary-date').value;
-    if (!date) { alert('날짜를 선택하세요'); return; }
-
-    const status = document.getElementById('admin-notion-status');
-    status.textContent = '⏳ 저장 중...';
-
-    try {
-      const res = await fetch('/api/notion-save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: `${date} - 생산성 있는 하루`,
-          date,
-          mood: '😊 보통',
-          keywords: '학습, 효율화',
-          content: `${date} 일기 내용`,
-          apiKey: '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',
-          databaseId: '952d54735ce143e4a72e3e1d18be5fdb'
-        })
-      });
-      const data = await res.json();
-      status.textContent = res.ok ? '✅ Notion에 저장되었습니다!' : `❌ ${data.error}`;
-    } catch (e) {
-      status.textContent = `❌ ${e.message}`;
-    }
-  }
-
-  async function adminGenerateDiary() {
-    const date = document.getElementById('admin-gen-date').value;
-    if (!date) { alert('날짜를 선택하세요'); return; }
-
-    const status = document.getElementById('admin-gen-status');
-    status.textContent = '⏳ 생성 중...';
-
-    try {
-      const res = await fetch('/api/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          command: `/opt/homebrew/bin/node /Users/taeo/chat/scripts/generate-past-diary.mjs ${date}`
-        })
-      });
-      const data = await res.json();
-      status.textContent = res.ok && data.code === 0 ? '✅ 일기 생성 완료!' : `❌ ${data.stderr}`;
-    } catch (e) {
-      status.textContent = `❌ ${e.message}`;
-    }
-  }
-
-  async function adminRunBackup() {
-    const status = document.getElementById('admin-backup-status');
-    status.textContent = '⏳ 백업 중...';
-
-    try {
-      const res = await fetch('/api/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          command: `/opt/homebrew/bin/node /Users/taeo/chat/scripts/daily-backup.mjs`
-        })
-      });
-      const data = await res.json();
-      status.textContent = res.ok && data.code === 0 ? '✅ 백업 완료!' : `❌ ${data.stderr}`;
-    } catch (e) {
-      status.textContent = `❌ ${e.message}`;
-    }
-  }
-
-  async function adminCheckAutomation() {
-    const status = document.getElementById('admin-automation-status');
-    status.textContent = '⏳ 확인 중...';
-
-    try {
-      const res = await fetch('/api/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          command: 'crontab -l 2>/dev/null | grep -E "daily|backup" || echo "자동화 작업 없음"'
-        })
-      });
-      const data = await res.json();
-      status.textContent = data.stdout || '자동화 작업 없음';
-    } catch (e) {
-      status.textContent = `❌ ${e.message}`;
-    }
-  }
 })();
 
 </script>

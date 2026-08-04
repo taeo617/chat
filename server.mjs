@@ -55,7 +55,7 @@ let state = {
   messages: [],          // [{ id, role: 'user'|'assistant', text, images?: [url], createdAt, tools?: [{name, count}] }]
   sessionId: null,
   config: { ...DEFAULT_CONFIG },
-  generating: false,
+  generatingCount: 0,    // count of ongoing generations (allows concurrent)
   activeAssistantId: null,   // id of the currently-streaming assistant message
 };
 
@@ -161,7 +161,7 @@ cleanupOldAttachments();
 
 let currentChild = null;  // for /stop
 
-function runChat({ userMessage, attRefs, speaker }) {
+function runChat({ userMessage, attRefs, speaker, speakerExplicit }) {
   return new Promise((resolve) => {
     /* Build final prompt: attachment refs prepended so Claude reads them. */
     const refsBlock = attRefs.length
@@ -175,7 +175,7 @@ function runChat({ userMessage, attRefs, speaker }) {
       '--output-format', 'stream-json',
       '--verbose',
       '--include-partial-messages',
-      '--permission-mode', 'dontAsk',
+      '--permission-mode', 'bypassPermissions',
     ];
     if (state.config.model)        args.push('--model', state.config.model);
 
@@ -183,7 +183,7 @@ function runChat({ userMessage, attRefs, speaker }) {
 
     composedPrompt += `
 
-## 역할 정의 및 협의 프로토콜
+## 역할 정의
 
 당신은 두 명의 AI 어시스턴트 역할을 합니다:
 
@@ -198,7 +198,24 @@ function runChat({ userMessage, attRefs, speaker }) {
 • 제안의 타당성, 위험성 검토
 • 할루시네이션, 오류 감지
 • 규정 및 합규성 확인
+`;
 
+    /* speakerExplicit === true  → 태영님이 이번 메시지에서 이름을 직접 불렀음.
+       이 경우 그 사람 혼자만 단독 응답 (dual-format 강제 안 함).
+       speakerExplicit === false/undefined → 이름 호출 없는 일반 요청 → 기존 대화형 협의 포맷. */
+    if (speakerExplicit && (speaker === 'minha' || speaker === 'chaeyeon')) {
+      const name = speaker === 'chaeyeon' ? '채연' : '민하';
+      const other = speaker === 'chaeyeon' ? '민하' : '채연';
+      composedPrompt += `
+## 현재 호출: ${name} 단독 응답 모드
+
+태영님이 이번 메시지에서 "${name}"를 직접 호출했습니다.
+• 이번 답변은 ${name} 혼자만 답합니다. ${other}는 이번 답변에 절대 등장시키지 마세요.
+• [이름]: 같은 화자 태그를 붙이지 말고, ${name} 본인 목소리로 자연스럽게 답변하세요.
+• 대화형 협의 포맷(민하↔채연 주고받기)은 이번엔 사용하지 않습니다.
+`;
+    } else {
+      composedPrompt += `
 ## 대화형 협의 프로세스 (태영님이 실시간으로 봅니다!)
 
 태영님의 요청에 대해 민하와 채연이 **직접 대화하는 형식**으로 답변하세요.
@@ -226,11 +243,6 @@ function runChat({ userMessage, attRefs, speaker }) {
 • 협의 내용은 투명하게 공개 (태영님이 볼 수 있게)
 • 최종 답변은 명확하고 실행 가능해야 함
 `;
-
-    if (speaker === 'chaeyeon') {
-      composedPrompt += '\n\n[현재 호출: 채연 감사실장 직접 응답]\n채연이 민하의 제안을 먼저 평가한 후, 태영님께 최종 답변합니다.';
-    } else if (speaker === 'minha') {
-      composedPrompt += '\n\n[현재 호출: 민하 비서실장 직접 응답]\n민하가 효율적 해결책을 제시하고, 채연의 검토를 거쳐 최종 답변합니다.';
     }
 
     composedPrompt += toneDirective(state.config.humorLevel);
@@ -246,10 +258,13 @@ function runChat({ userMessage, attRefs, speaker }) {
     child.stdin.write(finalPrompt);
     child.stdin.end();
 
-    /* Create the pending assistant message + broadcast. */
+    /* Create the pending assistant message + broadcast.
+       speaker defaults to the requested persona so that single-speaker
+       (explicit-call) replies with no [이름]: markers still tag correctly. */
     const asstMsg = {
       id: randomBytes(6).toString('hex'),
       role: 'assistant',
+      speaker: speaker === 'chaeyeon' ? 'chaeyeon' : 'minha',
       text: '',
       createdAt: Date.now(),
       tools: [],
@@ -306,7 +321,11 @@ function runChat({ userMessage, attRefs, speaker }) {
         }
         /* End of turn — parse dialogue and split by speaker. */
         else if (ev.type === 'result') {
-          state.generating = false;
+          state.generatingCount--;
+          if (state.generatingCount <= 0) {
+            state.generatingCount = 0;
+            broadcast({ t: 'generating', on: false });
+          }
           state.activeAssistantId = null;
           if (ev.session_id) state.sessionId = ev.session_id;
 
@@ -370,7 +389,11 @@ function runChat({ userMessage, attRefs, speaker }) {
 
     const finish = (err) => {
       if (currentChild === child) currentChild = null;
-      state.generating = false;
+      state.generatingCount--;
+      if (state.generatingCount <= 0) {
+        state.generatingCount = 0;
+        broadcast({ t: 'generating', on: false });
+      }
       state.activeAssistantId = null;
       saveStateSoon();
       if (err) broadcast({ t: 'error', message: err.message });
@@ -477,7 +500,7 @@ const server = createServer(async (req, res) => {
         messages: state.messages,
         sessionId: state.sessionId,
         config: state.config,
-        generating: state.generating,
+        generating: state.generatingCount > 0,
         activeAssistantId: state.activeAssistantId,
       }));
     }
@@ -498,7 +521,6 @@ const server = createServer(async (req, res) => {
 
     /* --------- Send message --------- */
     if (req.method === 'POST' && req.url === '/chat') {
-      if (state.generating) { res.writeHead(409); return res.end('busy'); }
       let body;
       try { body = await readBody(req); }
       catch (e) { res.writeHead(413); return res.end(e.message); }
@@ -506,7 +528,7 @@ const server = createServer(async (req, res) => {
       try { payload = JSON.parse(body); }
       catch { res.writeHead(400); return res.end('bad json'); }
 
-      const { prompt = '', attachments, speaker } = payload;
+      const { prompt = '', attachments, speaker, speakerExplicit } = payload;
       if (!prompt.trim() && !attachments?.length) {
         res.writeHead(400); return res.end('empty message');
       }
@@ -527,16 +549,16 @@ const server = createServer(async (req, res) => {
         images: publicUrls.length ? publicUrls : undefined,
       };
       state.messages.push(userMsg);
-      state.generating = true;
+      state.generatingCount++;
       saveStateSoon();
       broadcast({ t: 'user-added', message: userMsg });
-      broadcast({ t: 'generating', on: true });
+      if (state.generatingCount === 1) broadcast({ t: 'generating', on: true });
 
       res.writeHead(202, { 'content-type': 'application/json' });
       res.end(JSON.stringify({ ok: true, id: userMsg.id }));
 
       /* Fire the chat in background; events flow via broadcast. */
-      runChat({ userMessage: userMsg, attRefs, speaker }).catch((e) => {
+      runChat({ userMessage: userMsg, attRefs, speaker, speakerExplicit }).catch((e) => {
         console.error('[chat] runChat failed:', e);
       });
       return;
@@ -553,10 +575,10 @@ const server = createServer(async (req, res) => {
 
     /* --------- Clear conversation --------- */
     if (req.method === 'POST' && req.url === '/clear') {
-      if (state.generating && currentChild) currentChild.kill('SIGTERM');
+      if (state.generatingCount > 0 && currentChild) currentChild.kill('SIGTERM');
       state.messages = [];
       state.sessionId = null;
-      state.generating = false;
+      state.generatingCount = 0;
       state.activeAssistantId = null;
       saveStateSoon();
       broadcast({ t: 'cleared' });
