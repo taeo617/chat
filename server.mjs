@@ -185,12 +185,17 @@ async function fetchClaudeUsage() {
       let usagePercent = 0;
 
       /* Look for "$" or "US$" pattern */
-      const dollarMatch = textContent.match(/(?:US)?\$(\d+(?:\.\d{2})?)/);
+      const dollarMatch = textContent.match(/US?\$(\d+(?:\.\d{2})?)/);
       if (dollarMatch) totalCostUsd = parseFloat(dollarMatch[1]);
 
-      /* Look for usage percentage (e.g., "71% 사용됨", "19% 사용") */
-      const percentMatch = textContent.match(/(\d+)%\s*사용/);
-      if (percentMatch) usagePercent = parseInt(percentMatch[1]);
+      /* Look for usage percentage - 현재 세션 기준 */
+      /* Pattern: "75% 사용됨" 또는 "75% 사용" */
+      const percentMatches = textContent.match(/(\d+)%\s*사용/g);
+      if (percentMatches && percentMatches.length > 0) {
+        /* 첫 번째 퍼센트가 현재 세션 사용량 (주간 사용량 전) */
+        const match = percentMatches[0].match(/(\d+)%/);
+        if (match) usagePercent = parseInt(match[1]);
+      }
 
       return { totalCostUsd, usagePercent, timestamp: Date.now() };
     });
