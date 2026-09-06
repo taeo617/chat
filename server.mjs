@@ -182,12 +182,17 @@ async function fetchClaudeUsage() {
     const data = await page.evaluate(() => {
       const textContent = document.body.innerText;
       let totalCostUsd = 0;
+      let usagePercent = 0;
 
-      /* Look for "$" or "US$" pattern (e.g., "US$0.00", "$100.00") */
+      /* Look for "$" or "US$" pattern */
       const dollarMatch = textContent.match(/(?:US)?\$(\d+(?:\.\d{2})?)/);
       if (dollarMatch) totalCostUsd = parseFloat(dollarMatch[1]);
 
-      return { totalCostUsd, timestamp: Date.now() };
+      /* Look for usage percentage (e.g., "71% 사용됨", "19% 사용") */
+      const percentMatch = textContent.match(/(\d+)%\s*사용/);
+      if (percentMatch) usagePercent = parseInt(percentMatch[1]);
+
+      return { totalCostUsd, usagePercent, timestamp: Date.now() };
     });
 
     return data;

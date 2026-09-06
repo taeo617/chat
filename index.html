@@ -1239,61 +1239,19 @@
     user-select: none;
     font: inherit;
     font-size: 12px;
+    transition: all .2s ease;
   }
-  #usage-chip:hover { border-color: var(--border-strong); }
-  #usage-chip .u-value { font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
-  #usage-chip .u-label { font-size: 10px; color: var(--text-muted); }
-
-  #usage-pop {
-    display: none;
-    position: absolute;
-    top: calc(100% + 6px);
-    right: 0;
-    z-index: 60;
-    width: 240px;
-    padding: 12px;
+  #usage-chip:hover {
+    border-color: var(--border-strong);
     background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,.18);
-    font-size: 12px;
-    line-height: 1.45;
-    color: var(--text-secondary);
-    text-align: left;
-    white-space: normal;
   }
-  #usage-wrap.open #usage-pop { display: block; }
-  #usage-pop .up-title { font-weight: 600; color: var(--text); margin-bottom: 8px; }
-  #usage-pop .up-row { display: flex; justify-content: space-between; gap: 10px; margin-top: 4px; }
-  #usage-pop .up-row b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
-  #usage-pop .up-input {
-    width: 100%; margin-top: 8px;
-    padding: 6px 8px;
-    background: var(--bg-elev);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
-    font: inherit;
-    font-size: 11px;
+  #usage-chip.loading {
+    opacity: 0.6;
   }
-  #usage-pop .up-input:focus { border-color: var(--blue); outline: none; }
-  #usage-pop .up-btn {
-    width: 100%; margin-top: 6px;
-    background: var(--blue);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 6px 8px;
-    font: inherit;
-    font-size: 11px;
-    cursor: pointer;
+  #usage-chip .u-value {
     font-weight: 600;
-  }
-  #usage-pop .up-btn:hover { background: var(--blue-pressed); }
-  #usage-pop .up-note {
-    margin-top: 9px; padding-top: 8px;
-    border-top: 1px solid var(--border);
-    color: var(--text-muted); font-size: 11px;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
   }
 </style>
 </head>
@@ -1324,21 +1282,9 @@
             <span class="w-aqi">--</span>
           </div>
           <div id="usage-wrap">
-            <button type="button" id="usage-chip" aria-haspopup="dialog" aria-expanded="false" title="전체 사용량">
-              <span class="u-value">$--</span>
-              <span class="u-label">전체</span>
+            <button type="button" id="usage-chip" title="claude.ai에서 사용량 자동 가져오기 (클릭 또는 호버)">
+              <span class="u-value">--%</span>
             </button>
-            <div id="usage-pop" role="dialog" aria-label="사용량">
-              <div class="up-title">Claude 사용량</div>
-              <div class="up-row"><span>전체 누적</span><b id="up-total">$0.00</b></div>
-              <div class="up-row"><span>이번 세션</span><b id="up-session">$0.00</b></div>
-              <div class="up-input-wrap">
-                <input type="number" id="up-input" class="up-input" placeholder="$0.00" step="0.01" min="0" />
-                <button type="button" class="up-btn" id="up-save-btn">전체 사용량 업데이트</button>
-                <button type="button" class="up-btn" id="up-fetch-btn" style="background: var(--text-secondary); margin-top: 6px;">🔄 claude.ai에서 자동 가져오기</button>
-              </div>
-              <div class="up-note" id="up-note">마지막 업데이트: --</div>
-            </div>
           </div>
 
           <div id="token-wrap">
@@ -2411,18 +2357,15 @@
   const tokenChip = $('#token-chip');
   const tokenPop  = $('#token-pop');
 
-  const usageWrap = $('#usage-wrap');
   const usageChip = $('#usage-chip');
-  const usagePop  = $('#usage-pop');
-  const usageInput = $('#up-input');
-  const usageSaveBtn = $('#up-save-btn');
-  const usageFetchBtn = $('#up-fetch-btn');
 
   let usageState = {
     totalCostUsd: 0,
     sessionCostUsd: 0,
+    usagePercent: 0,
     lastUpdatedAt: null,
   };
+  let usageFetching = false;
 
   const ccNum = (k, d) => { const v = Number(localStorage.getItem(k)); return Number.isFinite(v) && v > 0 ? v : d; };
   const ccFmtClock = (ts) => new Date(ts).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
@@ -2512,79 +2455,48 @@
 
   function usageRender() {
     if (!usageChip) return;
-    usageChip.querySelector('.u-value').textContent = `$${usageState.totalCostUsd.toFixed(2)}`;
-    $('#up-total').textContent = `$${usageState.totalCostUsd.toFixed(2)}`;
-    $('#up-session').textContent = `$${usageState.sessionCostUsd.toFixed(2)}`;
+    usageChip.querySelector('.u-value').textContent = `${usageState.usagePercent}%`;
+  }
 
-    if (usageState.lastUpdatedAt) {
-      const d = new Date(usageState.lastUpdatedAt);
-      $('#up-note').textContent = `마지막 업데이트: ${d.toLocaleString('ko-KR')}`;
+  async function fetchUsageAuto() {
+    if (usageFetching || !usageChip) return;
+    usageFetching = true;
+    usageChip.classList.add('loading');
+
+    try {
+      const r = await fetch('/api/usage/fetch', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const data = await r.json();
+      if (data.ok && data.usage) {
+        usageState = data.usage;
+        usageRender();
+      }
+    } catch (e) {
+      console.error('[usage-fetch] error:', e.message);
+    } finally {
+      usageFetching = false;
+      usageChip.classList.remove('loading');
     }
   }
 
   if (usageChip) {
-    const usageClose = () => { usageWrap.classList.remove('open'); usageChip.setAttribute('aria-expanded', 'false'); };
+    /* 클릭 시 즉시 가져오기 */
     usageChip.addEventListener('click', (e) => {
       e.stopPropagation();
-      const open = usageWrap.classList.toggle('open');
-      usageChip.setAttribute('aria-expanded', String(open));
-      if (open) {
-        usageInput.focus();
-        usageInput.select();
-      }
-    });
-    usagePop.addEventListener('click', (e) => e.stopPropagation());
-
-    usageSaveBtn.addEventListener('click', async () => {
-      const val = parseFloat(usageInput.value);
-      if (!Number.isFinite(val) || val < 0) {
-        alert('올바른 숫자를 입력해주세요.');
-        return;
-      }
-      try {
-        const r = await fetch('/api/usage', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ totalCostUsd: val }),
-        });
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const data = await r.json();
-        usageState = data;
-        usageRender();
-        usageClose();
-      } catch (e) {
-        alert(`업데이트 실패: ${e.message}`);
-      }
+      fetchUsageAuto();
     });
 
-    usageFetchBtn.addEventListener('click', async () => {
-      usageFetchBtn.disabled = true;
-      usageFetchBtn.textContent = '🔄 claude.ai에서 가져오는 중...';
-      try {
-        const r = await fetch('/api/usage/fetch', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-        });
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const data = await r.json();
-        if (data.ok && data.usage) {
-          usageState = data.usage;
-          usageInput.value = data.usage.totalCostUsd.toFixed(2);
-          usageRender();
-          alert('✅ claude.ai에서 사용량을 가져왔습니다!');
-        } else {
-          alert(`⚠️ ${data.error || '데이터를 가져올 수 없습니다.'}`);
-        }
-      } catch (e) {
-        alert(`❌ 오류: ${e.message}`);
-      } finally {
-        usageFetchBtn.disabled = false;
-        usageFetchBtn.textContent = '🔄 claude.ai에서 자동 가져오기';
-      }
+    /* 호버 시 가져오기 (2초 대기) */
+    let hoverTimeout = null;
+    usageChip.addEventListener('mouseenter', () => {
+      hoverTimeout = setTimeout(() => fetchUsageAuto(), 500);
     });
-
-    document.addEventListener('click', usageClose);
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') usageClose(); });
+    usageChip.addEventListener('mouseleave', () => {
+      if (hoverTimeout) clearTimeout(hoverTimeout);
+    });
 
     usageRender();
   }
