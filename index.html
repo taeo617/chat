@@ -2042,10 +2042,6 @@
       generating = !!s.generating;
       activeAssistantId = s.activeAssistantId || null;
       if (s.usage) usageState = s.usage;
-      if (typeof ccEnd !== 'undefined' && typeof ccCost !== 'undefined') {
-        sessionInfo.end = ccEnd;
-        sessionInfo.cost = ccCost;
-      }
       usageRender();
       /* Any user message that already has an assistant reply after it must have
          been read — seed the readMap so the receipts render on cold load. */
@@ -2210,12 +2206,8 @@
           usageState = ev.usage;
           usageRender();
         }
-        /* Update session info for usage popover */
-        if (typeof ccEnd !== 'undefined' && typeof ccCost !== 'undefined') {
-          sessionInfo.end = ccEnd;
-          sessionInfo.cost = ccCost;
-          updateSessionInfo();
-        }
+        /* Update session info display */
+        updateSessionInfo();
         renderHeader();
         renderMessages();
         renderComposer();
@@ -2499,14 +2491,12 @@
   function updateSessionInfo() {
     if (!usagePop) return;
     const now = Date.now();
-    const left = Math.max(0, sessionInfo.end - now);
-    const pct = Math.max(0, Math.min(100, (sessionInfo.cost / CC_LIMIT_USD) * 100));
+    /* ccEnd와 ccCost를 직접 사용 (token-chip이 제거되었으므로) */
+    const left = Math.max(0, ccEnd - now);
+    const pct = Math.max(0, Math.min(100, (ccCost / CC_LIMIT_USD) * 100));
 
     $('#up-session-pct').textContent = `${Math.round(pct)}%`;
-
-    const minLeft = Math.floor(left / 60_000);
-    const minTotal = Math.floor((sessionInfo.end - (sessionInfo.end - CC_WINDOW_MS)) / 60_000);
-    $('#up-reset-time').textContent = minLeft > 0 ? `${minLeft}분 후` : '초기화됨';
+    $('#up-reset-time').textContent = left > 0 ? `${Math.floor(left / 60_000)}분 후` : '초기화됨';
   }
 
   async function fetchUsageAuto() {
