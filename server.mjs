@@ -6,7 +6,6 @@ import {
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { chromium } from 'playwright';
 
 const PORT       = Number(process.env.PORT || 8787);
 const ROOT       = dirname(fileURLToPath(import.meta.url));
@@ -62,6 +61,9 @@ let state = {
     totalCostUsd: 0,     // total account usage (user-updated)
     sessionCostUsd: 0,   // session cumulative cost
     lastUpdatedAt: null, // timestamp of last update
+    // Claude CLI rate_limit_event 에서 실시간 수신
+    fiveHour: { utilization: 0, resetsAt: 0 },
+    sevenDay: { utilization: 0, resetsAt: 0 },
   },
 };
 
@@ -162,69 +164,6 @@ async function cleanupOldAttachments() {
   } catch {}
 }
 cleanupOldAttachments();
-
-/* ---------- Usage scraping from claude.ai ---------- */
-
-const AUTH_FILE = join(ROOT, '.auth', 'claude-session.json');
-
-async function fetchClaudeUsage() {
-  let browser = null;
-  try {
-    /* Check if we have a saved login session */
-    const hasAuth = await stat(AUTH_FILE).then(() => true).catch(() => false);
-    if (!hasAuth) {
-      console.log('[usage-scrape] 로그인 세션 없음. node setup-usage-auth.mjs 를 먼저 실행하세요.');
-      return { error: 'no_auth', totalCostUsd: 0, usagePercent: 0 };
-    }
-
-    console.log('[usage-scrape] 시작: claude.ai/account/usage 접근 중...');
-    browser = await chromium.launch({ headless: true });
-    const context = await browser.createBrowserContext({ storageState: AUTH_FILE });
-    const page = await context.newPage();
-
-    /* Navigate to usage page */
-    console.log('[usage-scrape] 페이지 로드 중...');
-    await page.goto('https://claude.ai/account/usage', { waitUntil: 'networkidle', timeout: 30000 });
-
-    /* Wait for the usage data to load */
-    await page.waitForSelector('[aria-label="사용량"]', { timeout: 10000 }).catch(() => null);
-
-    /* Extract usage data */
-    const data = await page.evaluate(() => {
-      const textContent = document.body.innerText;
-      console.log('[page-eval] 페이지 텍스트 길이:', textContent.length);
-
-      let totalCostUsd = 0;
-      let usagePercent = 0;
-
-      /* Look for "$" or "US$" pattern */
-      const dollarMatch = textContent.match(/US?\$(\d+(?:\.\d{2})?)/);
-      if (dollarMatch) totalCostUsd = parseFloat(dollarMatch[1]);
-
-      /* Look for usage percentage - 현재 세션 기준 */
-      /* Pattern: "75% 사용됨" 또는 "75% 사용" */
-      const percentMatches = textContent.match(/(\d+)%\s*사용/g);
-      console.log('[page-eval] 찾은 퍼센트 매칭:', percentMatches);
-
-      if (percentMatches && percentMatches.length > 0) {
-        /* 첫 번째 퍼센트가 현재 세션 사용량 (주간 사용량 전) */
-        const match = percentMatches[0].match(/(\d+)%/);
-        if (match) usagePercent = parseInt(match[1]);
-        console.log('[page-eval] 추출된 퍼센트:', usagePercent);
-      }
-
-      return { totalCostUsd, usagePercent, timestamp: Date.now(), textSample: textContent.substring(0, 500) };
-    });
-
-    console.log('[usage-scrape] 결과:', data);
-    return data;
-  } catch (e) {
-    console.error('[usage-scrape] 오류:', e.message, e.stack);
-    return null;
-  } finally {
-    if (browser) await browser.close();
-  }
-}
 
 /* -------------------------------------------------------------------------- */
 /*  Chat runner: spawns claude, streams events, broadcasts to all clients     */
@@ -384,6 +323,27 @@ function runChat({ userMessage, attRefs, speaker, speakerExplicit }) {
             seenToolIds.add(b.id);
             asstMsg.tools.push({ id: b.id, name: b.name || 'tool' });
             broadcast({ t: 'tool', id: asstMsg.id, tool: b.name || 'tool' });
+          }
+        }
+        /* Rate limit / usage windows — Claude CLI가 실시간으로 알려줌 */
+        else if (ev.type === 'rate_limit_event') {
+          const w = ev.rate_limit_info?.unifiedWindows;
+          if (w) {
+            if (w.five_hour) {
+              state.usage.fiveHour = {
+                utilization: w.five_hour.utilization ?? 0,
+                resetsAt: w.five_hour.resetsAt ?? 0,
+              };
+            }
+            if (w.seven_day) {
+              state.usage.sevenDay = {
+                utilization: w.seven_day.utilization ?? 0,
+                resetsAt: w.seven_day.resetsAt ?? 0,
+              };
+            }
+            state.usage.lastUpdatedAt = new Date().toISOString();
+            saveStateSoon();
+            broadcast({ t: 'usage-updated', usage: state.usage });
           }
         }
         /* Retries — surface for debugging. */
@@ -664,29 +624,12 @@ const server = createServer(async (req, res) => {
       return res.end('{"ok":true}');
     }
 
-    /* --------- Fetch usage from claude.ai (scraping) --------- */
+    /* --------- Fetch usage (Claude CLI rate_limit_event 기반) --------- */
     if (req.method === 'POST' && req.url === '/api/usage/fetch') {
-      try {
-        const data = await fetchClaudeUsage();
-        if (data && typeof data.totalCostUsd === 'number') {
-          state.usage.totalCostUsd = data.totalCostUsd;
-          state.usage.lastUpdatedAt = new Date().toISOString();
-          saveStateSoon();
-          broadcast({ t: 'usage-updated', usage: state.usage });
-          res.writeHead(200, { 'content-type': 'application/json' });
-          return res.end(JSON.stringify({
-            ok: true,
-            usage: state.usage,
-            fetchedData: data,
-          }));
-        } else {
-          res.writeHead(500, { 'content-type': 'application/json' });
-          return res.end(JSON.stringify({ ok: false, error: 'Failed to extract usage data' }));
-        }
-      } catch (e) {
-        res.writeHead(500, { 'content-type': 'application/json' });
-        return res.end(JSON.stringify({ ok: false, error: e.message }));
-      }
+      /* 사용량은 채팅할 때마다 Claude CLI가 rate_limit_event 로 알려주므로
+         여기서는 마지막으로 수신한 값을 그대로 돌려준다. (추가 비용 없음) */
+      res.writeHead(200, { 'content-type': 'application/json' });
+      return res.end(JSON.stringify({ ok: true, usage: state.usage }));
     }
 
     /* --------- Update usage (total account cost - manual) --------- */

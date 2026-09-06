@@ -1286,6 +1286,18 @@
     font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
+  #usage-pop .up-bar {
+    height: 4px; border-radius: 999px; background: var(--bg-elev);
+    overflow: hidden; margin: 4px 0 3px;
+  }
+  #usage-pop .up-fill {
+    height: 100%; width: 0%; background: var(--text-secondary);
+    transition: width .3s ease;
+  }
+  #usage-pop .up-fill.warn  { background: #ff9500; }
+  #usage-pop .up-fill.worst { background: var(--danger); }
+  #usage-pop .up-sub { font-size: 11px; color: var(--text-muted); }
+  #usage-pop .up-gap { height: 10px; }
 </style>
 </head>
 <body>
@@ -1319,8 +1331,13 @@
               <span class="u-value">--%</span>
             </button>
             <div id="usage-pop">
-              <div class="up-row"><span>이 세션</span><b id="up-session-pct">--%</b></div>
-              <div class="up-row"><span>재설정</span><b id="up-reset-time">--</b></div>
+              <div class="up-row"><span>세션 (5시간)</span><b id="up-5h-pct">--%</b></div>
+              <div class="up-bar"><div class="up-fill" id="up-5h-fill"></div></div>
+              <div class="up-sub" id="up-5h-reset">--</div>
+              <div class="up-gap"></div>
+              <div class="up-row"><span>주간 (7일)</span><b id="up-7d-pct">--%</b></div>
+              <div class="up-bar"><div class="up-fill" id="up-7d-fill"></div></div>
+              <div class="up-sub" id="up-7d-reset">--</div>
             </div>
           </div>
 
@@ -2388,14 +2405,11 @@
   let usageState = {
     totalCostUsd: 0,
     sessionCostUsd: 0,
-    usagePercent: 0,
     lastUpdatedAt: null,
+    fiveHour: { utilization: 0, resetsAt: 0 },
+    sevenDay: { utilization: 0, resetsAt: 0 },
   };
   let usageFetching = false;
-  let sessionInfo = {
-    end: 0,
-    cost: 0,
-  };
 
   const ccNum = (k, d) => { const v = Number(localStorage.getItem(k)); return Number.isFinite(v) && v > 0 ? v : d; };
   const ccFmtClock = (ts) => new Date(ts).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
@@ -2483,21 +2497,47 @@
 
   /* ---------- Usage tracking ---------- */
 
+  /* resetsAt (unix seconds) → "2시간 후" / "1일 후" 같은 문구 */
+  function fmtResetsIn(resetsAtSec) {
+    if (!resetsAtSec) return '--';
+    const leftMs = resetsAtSec * 1000 - Date.now();
+    if (leftMs <= 0) return '초기화됨';
+    const mins = Math.floor(leftMs / 60_000);
+    if (mins < 60) return `${mins}분 후 재설정`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}시간 ${mins % 60}분 후 재설정`;
+    return `${Math.floor(hours / 24)}일 ${hours % 24}시간 후 재설정`;
+  }
+
+  function fillLevel(el, pct) {
+    if (!el) return;
+    el.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+    el.classList.remove('warn', 'worst');
+    if (pct >= 90) el.classList.add('worst');
+    else if (pct >= 70) el.classList.add('warn');
+  }
+
   function usageRender() {
     if (!usageChip) return;
-    usageChip.querySelector('.u-value').textContent = `${usageState.usagePercent}%`;
+    const p5 = Math.round((usageState.fiveHour?.utilization || 0) * 100);
+    const p7 = Math.round((usageState.sevenDay?.utilization || 0) * 100);
+
+    /* 헤더 칩: 5시간 세션 사용률 */
+    usageChip.querySelector('.u-value').textContent = `${p5}%`;
+
+    /* 팝오버: 5시간 / 7일 */
+    const el5 = $('#up-5h-pct'), el7 = $('#up-7d-pct');
+    if (el5) el5.textContent = `${p5}%`;
+    if (el7) el7.textContent = `${p7}%`;
+    fillLevel($('#up-5h-fill'), p5);
+    fillLevel($('#up-7d-fill'), p7);
+    const r5 = $('#up-5h-reset'), r7 = $('#up-7d-reset');
+    if (r5) r5.textContent = fmtResetsIn(usageState.fiveHour?.resetsAt);
+    if (r7) r7.textContent = fmtResetsIn(usageState.sevenDay?.resetsAt);
   }
 
-  function updateSessionInfo() {
-    if (!usagePop) return;
-    const now = Date.now();
-    /* ccEnd와 ccCost를 직접 사용 (token-chip이 제거되었으므로) */
-    const left = Math.max(0, ccEnd - now);
-    const pct = Math.max(0, Math.min(100, (ccCost / CC_LIMIT_USD) * 100));
-
-    $('#up-session-pct').textContent = `${Math.round(pct)}%`;
-    $('#up-reset-time').textContent = left > 0 ? `${Math.floor(left / 60_000)}분 후` : '초기화됨';
-  }
+  /* 팝오버 열려있는 동안 남은 시간만 갱신 */
+  const updateSessionInfo = usageRender;
 
   async function fetchUsageAuto() {
     if (usageFetching || !usageChip) return;
