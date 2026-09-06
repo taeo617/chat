@@ -1223,6 +1223,7 @@
   }
 
   /* ---------- Usage chip ---------- */
+  #usage-wrap { position: relative; }
   #usage-chip {
     display: inline-flex;
     align-items: center;
@@ -1251,6 +1252,38 @@
   #usage-chip .u-value {
     font-weight: 600;
     color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Usage popover */
+  #usage-pop {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 60;
+    min-width: 180px;
+    padding: 10px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.18);
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    text-align: left;
+    white-space: nowrap;
+  }
+  #usage-wrap.open #usage-pop { display: block; }
+  #usage-pop .up-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 6px 0;
+  }
+  #usage-pop .up-row b {
+    color: var(--text);
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
 </style>
@@ -1282,9 +1315,13 @@
             <span class="w-aqi">--</span>
           </div>
           <div id="usage-wrap">
-            <button type="button" id="usage-chip" title="claude.ai에서 사용량 자동 가져오기 (클릭 또는 호버)">
+            <button type="button" id="usage-chip" title="클릭: 사용량 보기 및 업데이트">
               <span class="u-value">--%</span>
             </button>
+            <div id="usage-pop">
+              <div class="up-row"><span>이 세션</span><b id="up-session-pct">--%</b></div>
+              <div class="up-row"><span>재설정</span><b id="up-reset-time">--</b></div>
+            </div>
           </div>
 
           <div id="token-wrap">
@@ -2020,6 +2057,10 @@
       generating = !!s.generating;
       activeAssistantId = s.activeAssistantId || null;
       if (s.usage) usageState = s.usage;
+      if (typeof ccEnd !== 'undefined' && typeof ccCost !== 'undefined') {
+        sessionInfo.end = ccEnd;
+        sessionInfo.cost = ccCost;
+      }
       usageRender();
       /* Any user message that already has an assistant reply after it must have
          been read — seed the readMap so the receipts render on cold load. */
@@ -2183,6 +2224,12 @@
         if (ev.usage) {
           usageState = ev.usage;
           usageRender();
+        }
+        /* Update session info for usage popover */
+        if (typeof ccEnd !== 'undefined' && typeof ccCost !== 'undefined') {
+          sessionInfo.end = ccEnd;
+          sessionInfo.cost = ccCost;
+          updateSessionInfo();
         }
         renderHeader();
         renderMessages();
@@ -2357,7 +2404,9 @@
   const tokenChip = $('#token-chip');
   const tokenPop  = $('#token-pop');
 
+  const usageWrap = $('#usage-wrap');
   const usageChip = $('#usage-chip');
+  const usagePop = $('#usage-pop');
 
   let usageState = {
     totalCostUsd: 0,
@@ -2366,6 +2415,10 @@
     lastUpdatedAt: null,
   };
   let usageFetching = false;
+  let sessionInfo = {
+    end: 0,
+    cost: 0,
+  };
 
   const ccNum = (k, d) => { const v = Number(localStorage.getItem(k)); return Number.isFinite(v) && v > 0 ? v : d; };
   const ccFmtClock = (ts) => new Date(ts).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
@@ -2458,6 +2511,19 @@
     usageChip.querySelector('.u-value').textContent = `${usageState.usagePercent}%`;
   }
 
+  function updateSessionInfo() {
+    if (!usagePop) return;
+    const now = Date.now();
+    const left = Math.max(0, sessionInfo.end - now);
+    const pct = Math.max(0, Math.min(100, (sessionInfo.cost / CC_LIMIT_USD) * 100));
+
+    $('#up-session-pct').textContent = `${Math.round(pct)}%`;
+
+    const minLeft = Math.floor(left / 60_000);
+    const minTotal = Math.floor((sessionInfo.end - (sessionInfo.end - CC_WINDOW_MS)) / 60_000);
+    $('#up-reset-time').textContent = minLeft > 0 ? `${minLeft}분 후` : '초기화됨';
+  }
+
   async function fetchUsageAuto() {
     if (usageFetching || !usageChip) return;
     usageFetching = true;
@@ -2483,19 +2549,44 @@
   }
 
   if (usageChip) {
-    /* 클릭 시 즉시 가져오기 */
+    const usageClose = () => {
+      usageWrap.classList.remove('open');
+      usageChip.setAttribute('aria-expanded', 'false');
+    };
+
+    /* 클릭 시 팝오버 토글 + 데이터 가져오기 */
     usageChip.addEventListener('click', (e) => {
       e.stopPropagation();
-      fetchUsageAuto();
+      const open = usageWrap.classList.toggle('open');
+      usageChip.setAttribute('aria-expanded', String(open));
+      if (open) {
+        fetchUsageAuto();
+        updateSessionInfo();
+        /* 팝오버 열려있는 동안 1초마다 세션 정보 업데이트 */
+        if (!usageChip._sessionUpdateInterval) {
+          usageChip._sessionUpdateInterval = setInterval(() => {
+            if (usageWrap.classList.contains('open')) {
+              updateSessionInfo();
+            }
+          }, 1000);
+        }
+      }
     });
 
-    /* 호버 시 가져오기 (2초 대기) */
+    /* 호버 시 데이터 가져오기 */
     let hoverTimeout = null;
     usageChip.addEventListener('mouseenter', () => {
       hoverTimeout = setTimeout(() => fetchUsageAuto(), 500);
     });
     usageChip.addEventListener('mouseleave', () => {
       if (hoverTimeout) clearTimeout(hoverTimeout);
+    });
+
+    /* 외부 클릭으로 닫기 */
+    usagePop.addEventListener('click', (e) => e.stopPropagation());
+    document.addEventListener('click', usageClose);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') usageClose();
     });
 
     usageRender();
