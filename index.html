@@ -1335,6 +1335,7 @@
               <div class="up-input-wrap">
                 <input type="number" id="up-input" class="up-input" placeholder="$0.00" step="0.01" min="0" />
                 <button type="button" class="up-btn" id="up-save-btn">전체 사용량 업데이트</button>
+                <button type="button" class="up-btn" id="up-fetch-btn" style="background: var(--text-secondary); margin-top: 6px;">🔄 claude.ai에서 자동 가져오기</button>
               </div>
               <div class="up-note" id="up-note">마지막 업데이트: --</div>
             </div>
@@ -2415,6 +2416,7 @@
   const usagePop  = $('#usage-pop');
   const usageInput = $('#up-input');
   const usageSaveBtn = $('#up-save-btn');
+  const usageFetchBtn = $('#up-fetch-btn');
 
   let usageState = {
     totalCostUsd: 0,
@@ -2552,6 +2554,32 @@
         usageClose();
       } catch (e) {
         alert(`업데이트 실패: ${e.message}`);
+      }
+    });
+
+    usageFetchBtn.addEventListener('click', async () => {
+      usageFetchBtn.disabled = true;
+      usageFetchBtn.textContent = '🔄 claude.ai에서 가져오는 중...';
+      try {
+        const r = await fetch('/api/usage/fetch', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
+        if (data.ok && data.usage) {
+          usageState = data.usage;
+          usageInput.value = data.usage.totalCostUsd.toFixed(2);
+          usageRender();
+          alert('✅ claude.ai에서 사용량을 가져왔습니다!');
+        } else {
+          alert(`⚠️ ${data.error || '데이터를 가져올 수 없습니다.'}`);
+        }
+      } catch (e) {
+        alert(`❌ 오류: ${e.message}`);
+      } finally {
+        usageFetchBtn.disabled = false;
+        usageFetchBtn.textContent = '🔄 claude.ai에서 자동 가져오기';
       }
     });
 

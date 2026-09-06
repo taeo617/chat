@@ -6,6 +6,7 @@ import {
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { randomBytes } from 'node:crypto';
+import { chromium } from 'playwright';
 
 const PORT       = Number(process.env.PORT || 8787);
 const ROOT       = dirname(fileURLToPath(import.meta.url));
@@ -161,6 +162,42 @@ async function cleanupOldAttachments() {
   } catch {}
 }
 cleanupOldAttachments();
+
+/* ---------- Usage scraping from claude.ai ---------- */
+
+async function fetchClaudeUsage() {
+  let browser = null;
+  try {
+    browser = await chromium.launch({ headless: true });
+    const context = await browser.createBrowserContext();
+    const page = await context.newPage();
+
+    /* Navigate to usage page */
+    await page.goto('https://claude.ai/account/usage', { waitUntil: 'networkidle', timeout: 30000 });
+
+    /* Wait for the usage data to load */
+    await page.waitForSelector('[aria-label="사용량"]', { timeout: 10000 }).catch(() => null);
+
+    /* Extract usage data */
+    const data = await page.evaluate(() => {
+      const textContent = document.body.innerText;
+      let totalCostUsd = 0;
+
+      /* Look for "$" or "US$" pattern (e.g., "US$0.00", "$100.00") */
+      const dollarMatch = textContent.match(/(?:US)?\$(\d+(?:\.\d{2})?)/);
+      if (dollarMatch) totalCostUsd = parseFloat(dollarMatch[1]);
+
+      return { totalCostUsd, timestamp: Date.now() };
+    });
+
+    return data;
+  } catch (e) {
+    console.error('[usage-scrape] error:', e.message);
+    return null;
+  } finally {
+    if (browser) await browser.close();
+  }
+}
 
 /* -------------------------------------------------------------------------- */
 /*  Chat runner: spawns claude, streams events, broadcasts to all clients     */
@@ -600,7 +637,32 @@ const server = createServer(async (req, res) => {
       return res.end('{"ok":true}');
     }
 
-    /* --------- Update usage (total account cost) --------- */
+    /* --------- Fetch usage from claude.ai (scraping) --------- */
+    if (req.method === 'POST' && req.url === '/api/usage/fetch') {
+      try {
+        const data = await fetchClaudeUsage();
+        if (data && typeof data.totalCostUsd === 'number') {
+          state.usage.totalCostUsd = data.totalCostUsd;
+          state.usage.lastUpdatedAt = new Date().toISOString();
+          saveStateSoon();
+          broadcast({ t: 'usage-updated', usage: state.usage });
+          res.writeHead(200, { 'content-type': 'application/json' });
+          return res.end(JSON.stringify({
+            ok: true,
+            usage: state.usage,
+            fetchedData: data,
+          }));
+        } else {
+          res.writeHead(500, { 'content-type': 'application/json' });
+          return res.end(JSON.stringify({ ok: false, error: 'Failed to extract usage data' }));
+        }
+      } catch (e) {
+        res.writeHead(500, { 'content-type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: e.message }));
+      }
+    }
+
+    /* --------- Update usage (total account cost - manual) --------- */
     if (req.method === 'POST' && req.url === '/api/usage') {
       let body;
       try { body = await readBody(req); }
