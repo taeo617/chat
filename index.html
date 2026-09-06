@@ -2526,10 +2526,11 @@
       e.stopPropagation();
       const open = usageWrap.classList.toggle('open');
       usageChip.setAttribute('aria-expanded', String(open));
-      if (open) usageInput.focus();
+      if (open) {
+        usageInput.focus();
+        usageInput.select();
+      }
     });
-    usageWrap.addEventListener('mouseenter', () => { usageWrap.classList.add('open'); });
-    usageWrap.addEventListener('mouseleave', () => { if (document.activeElement !== usageChip) usageClose(); });
     usagePop.addEventListener('click', (e) => e.stopPropagation());
 
     usageSaveBtn.addEventListener('click', async () => {
