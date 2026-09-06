@@ -57,6 +57,11 @@ let state = {
   config: { ...DEFAULT_CONFIG },
   generatingCount: 0,    // count of ongoing generations (allows concurrent)
   activeAssistantId: null,   // id of the currently-streaming assistant message
+  usage: {
+    totalCostUsd: 0,     // total account usage (user-updated)
+    sessionCostUsd: 0,   // session cumulative cost
+    lastUpdatedAt: null, // timestamp of last update
+  },
 };
 
 try {
@@ -65,6 +70,7 @@ try {
   state.messages = Array.isArray(loaded.messages) ? loaded.messages : [];
   state.sessionId = loaded.sessionId ?? null;
   state.config = { ...DEFAULT_CONFIG, ...(loaded.config || {}) };
+  state.usage = { ...state.usage, ...(loaded.usage || {}) };
 } catch { /* first run */ }
 
 let saveTimer = null;
@@ -77,6 +83,7 @@ function saveStateSoon() {
         messages: state.messages,
         sessionId: state.sessionId,
         config: state.config,
+        usage: state.usage,
       }));
     } catch (e) { console.error('[state] save failed:', e); }
   }, 200);
@@ -373,6 +380,11 @@ function runChat({ userMessage, attRefs, speaker, speakerExplicit }) {
             });
           }
 
+          /* Accumulate session cost */
+          if (typeof ev.total_cost_usd === 'number' && ev.total_cost_usd > 0) {
+            state.usage.sessionCostUsd += ev.total_cost_usd;
+          }
+
           saveStateSoon();
           broadcast({
             t: 'assistant-done',
@@ -380,6 +392,7 @@ function runChat({ userMessage, attRefs, speaker, speakerExplicit }) {
             isError: !!ev.is_error,
             stopReason: ev.stop_reason ?? null,
             cost: ev.total_cost_usd ?? null,
+            usage: state.usage,
           });
         }
       }
@@ -502,6 +515,7 @@ const server = createServer(async (req, res) => {
         config: state.config,
         generating: state.generatingCount > 0,
         activeAssistantId: state.activeAssistantId,
+        usage: state.usage,
       }));
     }
 
@@ -584,6 +598,26 @@ const server = createServer(async (req, res) => {
       broadcast({ t: 'cleared' });
       res.writeHead(200, { 'content-type': 'application/json' });
       return res.end('{"ok":true}');
+    }
+
+    /* --------- Update usage (total account cost) --------- */
+    if (req.method === 'POST' && req.url === '/api/usage') {
+      let body;
+      try { body = await readBody(req); }
+      catch (e) { res.writeHead(413); return res.end(e.message); }
+      let patch;
+      try { patch = JSON.parse(body); }
+      catch { res.writeHead(400); return res.end('bad json'); }
+
+      if (typeof patch.totalCostUsd === 'number' && patch.totalCostUsd >= 0) {
+        state.usage.totalCostUsd = patch.totalCostUsd;
+        state.usage.lastUpdatedAt = new Date().toISOString();
+        saveStateSoon();
+        broadcast({ t: 'usage-updated', usage: state.usage });
+      }
+
+      res.writeHead(200, { 'content-type': 'application/json' });
+      return res.end(JSON.stringify(state.usage));
     }
 
     /* --------- Update config (persona/model/etc) --------- */

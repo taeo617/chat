@@ -222,6 +222,77 @@
   #weather-chip .w-aqi.bad { color: #ff9500; }
   #weather-chip .w-aqi.worst { color: var(--danger); }
   #weather-chip.loading { opacity: 0.55; }
+
+  /* ---------- Session / token chip ---------- */
+  #token-wrap { position: relative; }
+  #token-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 10px;
+    white-space: nowrap;
+    line-height: 1.2;
+    cursor: pointer;
+    user-select: none;
+    font: inherit;
+    font-size: 12px;
+  }
+  #token-chip:hover { border-color: var(--border-strong); }
+  #token-chip .t-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #34c759; flex: none;
+  }
+  #token-chip.warn  .t-dot { background: #ff9500; }
+  #token-chip.worst .t-dot { background: var(--danger); }
+  #token-chip .t-time { font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+
+  #token-pop {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 60;
+    width: 232px;
+    padding: 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.18);
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--text-secondary);
+    text-align: left;
+    white-space: normal;
+  }
+  #token-wrap.open #token-pop { display: block; }
+  #token-pop .tp-title { font-weight: 600; color: var(--text); margin-bottom: 8px; }
+  #token-pop .tp-row { display: flex; justify-content: space-between; gap: 10px; margin-top: 4px; }
+  #token-pop .tp-row b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+  #token-pop .tp-bar {
+    height: 6px; border-radius: 999px; background: var(--bg-elev);
+    overflow: hidden; margin: 8px 0 6px;
+  }
+  #token-pop .tp-fill { height: 100%; width: 0%; background: #34c759; transition: width .3s ease; }
+  #token-pop.warn  .tp-fill { background: #ff9500; }
+  #token-pop.worst .tp-fill { background: var(--danger); }
+  #token-pop .tp-note {
+    margin-top: 9px; padding-top: 8px;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted); font-size: 11px;
+  }
+  #token-pop .tp-sync {
+    margin-top: 8px; width: 100%;
+    background: var(--bg-elev); color: var(--text-secondary);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 5px 8px; font: inherit; font-size: 11px; cursor: pointer;
+  }
+  #token-pop .tp-sync:hover { border-color: var(--border-strong); color: var(--text); }
+
   #theme-btn { width: 32px; height: 32px; }
   #theme-btn svg { width: 18px; height: 18px; }
 
@@ -1150,6 +1221,80 @@
   @media (prefers-reduced-motion: reduce) {
     #avatar-lightbox { animation: none; }
   }
+
+  /* ---------- Usage chip ---------- */
+  #usage-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 10px;
+    white-space: nowrap;
+    line-height: 1.2;
+    cursor: pointer;
+    user-select: none;
+    font: inherit;
+    font-size: 12px;
+  }
+  #usage-chip:hover { border-color: var(--border-strong); }
+  #usage-chip .u-value { font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+  #usage-chip .u-label { font-size: 10px; color: var(--text-muted); }
+
+  #usage-pop {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 60;
+    width: 240px;
+    padding: 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.18);
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--text-secondary);
+    text-align: left;
+    white-space: normal;
+  }
+  #usage-wrap.open #usage-pop { display: block; }
+  #usage-pop .up-title { font-weight: 600; color: var(--text); margin-bottom: 8px; }
+  #usage-pop .up-row { display: flex; justify-content: space-between; gap: 10px; margin-top: 4px; }
+  #usage-pop .up-row b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+  #usage-pop .up-input {
+    width: 100%; margin-top: 8px;
+    padding: 6px 8px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font: inherit;
+    font-size: 11px;
+  }
+  #usage-pop .up-input:focus { border-color: var(--blue); outline: none; }
+  #usage-pop .up-btn {
+    width: 100%; margin-top: 6px;
+    background: var(--blue);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 8px;
+    font: inherit;
+    font-size: 11px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  #usage-pop .up-btn:hover { background: var(--blue-pressed); }
+  #usage-pop .up-note {
+    margin-top: 9px; padding-top: 8px;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted); font-size: 11px;
+  }
 </style>
 </head>
 <body>
@@ -1177,6 +1322,39 @@
             <span class="w-emoji">⏳</span>
             <span class="w-temp">--°</span>
             <span class="w-aqi">--</span>
+          </div>
+          <div id="usage-wrap">
+            <button type="button" id="usage-chip" aria-haspopup="dialog" aria-expanded="false" title="전체 사용량">
+              <span class="u-value">$--</span>
+              <span class="u-label">전체</span>
+            </button>
+            <div id="usage-pop" role="dialog" aria-label="사용량">
+              <div class="up-title">Claude 사용량</div>
+              <div class="up-row"><span>전체 누적</span><b id="up-total">$0.00</b></div>
+              <div class="up-row"><span>이번 세션</span><b id="up-session">$0.00</b></div>
+              <div class="up-input-wrap">
+                <input type="number" id="up-input" class="up-input" placeholder="$0.00" step="0.01" min="0" />
+                <button type="button" class="up-btn" id="up-save-btn">전체 사용량 업데이트</button>
+              </div>
+              <div class="up-note" id="up-note">마지막 업데이트: --</div>
+            </div>
+          </div>
+
+          <div id="token-wrap">
+            <button type="button" id="token-chip" aria-haspopup="dialog" aria-expanded="false" title="세션 초기화까지 남은 시간">
+              <span class="t-dot"></span>
+              <span class="t-time">--:--</span>
+            </button>
+            <div id="token-pop" role="dialog" aria-label="세션 사용량">
+              <div class="tp-title">세션 초기화</div>
+              <div class="tp-row"><span>남은 시간</span><b id="tp-remain">--</b></div>
+              <div class="tp-row"><span>초기화 시각</span><b id="tp-at">--</b></div>
+              <div class="tp-bar"><div class="tp-fill" id="tp-fill"></div></div>
+              <div class="tp-row"><span>창 경과</span><b id="tp-elapsed">--</b></div>
+              <div class="tp-row"><span>이 앱 사용분</span><b id="tp-cost">$0.00</b></div>
+              <div class="tp-note" id="tp-note"></div>
+              <button type="button" class="tp-sync" id="tp-sync">초기화 시각 다시 맞추기</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1894,6 +2072,8 @@
       sessionId = s.sessionId || null;
       generating = !!s.generating;
       activeAssistantId = s.activeAssistantId || null;
+      if (s.usage) usageState = s.usage;
+      usageRender();
       /* Any user message that already has an assistant reply after it must have
          been read — seed the readMap so the receipts render on cold load. */
       for (let i = 0; i < messages.length - 1; i++) {
@@ -2052,6 +2232,11 @@
         const doneId = activeAssistantId;
         activeAssistantId = null;
         if (ev.isError) showError('응답 중 오류가 있었어요.');
+        ccAddCost(ev.cost);
+        if (ev.usage) {
+          usageState = ev.usage;
+          usageRender();
+        }
         renderHeader();
         renderMessages();
         renderComposer();
@@ -2095,6 +2280,13 @@
       }
       case 'retry': {
         /* silent */
+        break;
+      }
+      case 'usage-updated': {
+        if (ev.usage) {
+          usageState = ev.usage;
+          usageRender();
+        }
         break;
       }
     }
@@ -2200,6 +2392,173 @@
   $('#settings-cancel').addEventListener('click', closeSettings);
   $('#settings-save').addEventListener('click', saveSettings);
   $('#wipe-btn').addEventListener('click', wipeAll);
+
+  /* ---------- Session window / token chip ----------
+   * 5시간 롤링 창은 claude.ai · Claude Code CLI · 이 앱이 함께 쓰는 값이라
+   * 이 앱 혼자서는 정확한 시작 시각을 알 수 없다. 그래서 초기화 시각을
+   * 한 번 기준점으로 잡아 저장해두고(아래 SEED / "다시 맞추기" 버튼),
+   * 거기서 카운트다운한다. 비용은 서버가 assistant-done에 실어주는
+   * total_cost_usd 를 창 단위로 누적한 값 — 이 앱에서 쓴 몫만 반영된다.
+   */
+  const CC_WINDOW_MS = 5 * 60 * 60 * 1000;
+  const CC_LIMIT_USD = 3.50;
+  const CC_SEED_END  = new Date('2026-08-24T01:01:00+09:00').getTime();
+  const CC_K_END = 'cc_window_end';
+  const CC_K_COST = 'cc_window_cost';
+
+  const tokenWrap = $('#token-wrap');
+  const tokenChip = $('#token-chip');
+  const tokenPop  = $('#token-pop');
+
+  const usageWrap = $('#usage-wrap');
+  const usageChip = $('#usage-chip');
+  const usagePop  = $('#usage-pop');
+  const usageInput = $('#up-input');
+  const usageSaveBtn = $('#up-save-btn');
+
+  let usageState = {
+    totalCostUsd: 0,
+    sessionCostUsd: 0,
+    lastUpdatedAt: null,
+  };
+
+  const ccNum = (k, d) => { const v = Number(localStorage.getItem(k)); return Number.isFinite(v) && v > 0 ? v : d; };
+  const ccFmtClock = (ts) => new Date(ts).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+  const ccFmtDur = (ms) => {
+    const t = Math.max(0, Math.floor(ms / 1000));
+    return `${Math.floor(t / 3600)}시간 ${String(Math.floor(t % 3600 / 60)).padStart(2, '0')}분`;
+  };
+
+  let ccEnd  = ccNum(CC_K_END, CC_SEED_END);
+  let ccCost = Number(localStorage.getItem(CC_K_COST)) || 0;
+
+  function ccSetEnd(ts) {
+    ccEnd = ts;
+    localStorage.setItem(CC_K_END, String(ts));
+  }
+  function ccSetCost(v) {
+    ccCost = v;
+    localStorage.setItem(CC_K_COST, String(v));
+  }
+
+  /* 서버가 알려준 실제 비용 누적. 창이 지났으면 새 창을 연다. */
+  function ccAddCost(usd) {
+    if (!Number.isFinite(usd) || usd <= 0) return;
+    if (Date.now() >= ccEnd) { ccSetEnd(Date.now() + CC_WINDOW_MS); ccSetCost(0); }
+    ccSetCost(ccCost + usd);
+    ccRender();
+  }
+
+  function ccRender() {
+    if (!tokenChip) return;
+    const now = Date.now();
+    const left = ccEnd - now;
+    const expired = left <= 0;
+    const pct = Math.max(0, Math.min(100, (ccCost / CC_LIMIT_USD) * 100));
+
+    const t = Math.max(0, Math.floor(left / 1000));
+    tokenChip.querySelector('.t-time').textContent =
+      expired ? '초기화됨' : `${Math.floor(t / 3600)}:${String(Math.floor(t % 3600 / 60)).padStart(2, '0')}`;
+
+    const level = expired ? '' : left < 30 * 60_000 ? 'worst' : left < 60 * 60_000 ? 'warn' : '';
+    tokenChip.classList.remove('warn', 'worst');
+    tokenPop.classList.remove('warn', 'worst');
+    if (level) { tokenChip.classList.add(level); tokenPop.classList.add(level); }
+    tokenChip.title = expired
+      ? '세션 창이 지났어요 · 다음 메시지부터 새 창'
+      : `${ccFmtDur(left)} 뒤 초기화 (${ccFmtClock(ccEnd)})`;
+
+    $('#tp-remain').textContent  = expired ? '초기화됨' : ccFmtDur(left);
+    $('#tp-at').textContent      = ccFmtClock(ccEnd);
+    $('#tp-elapsed').textContent = expired ? '--' : ccFmtDur(CC_WINDOW_MS - left);
+    $('#tp-cost').textContent    = `$${ccCost.toFixed(2)}`;
+    $('#tp-fill').style.width    = `${pct}%`;
+    $('#tp-note').textContent = expired
+      ? '창이 지났어요. 다음 메시지를 보내면 새 5시간 창이 시작돼요.'
+      : '5시간 창은 claude.ai·CLI와 함께 쓰는 값이라, 사용분은 이 앱에서 쓴 몫만 집계돼요.';
+  }
+
+  if (tokenChip) {
+    const ccClose = () => { tokenWrap.classList.remove('open'); tokenChip.setAttribute('aria-expanded', 'false'); };
+    tokenChip.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const open = tokenWrap.classList.toggle('open');
+      tokenChip.setAttribute('aria-expanded', String(open));
+    });
+    tokenWrap.addEventListener('mouseenter', () => { tokenWrap.classList.add('open'); });
+    tokenWrap.addEventListener('mouseleave', () => { if (document.activeElement !== tokenChip) ccClose(); });
+    tokenPop.addEventListener('click', (e) => e.stopPropagation());
+    document.addEventListener('click', ccClose);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') ccClose(); });
+
+    $('#tp-sync').addEventListener('click', () => {
+      const raw = prompt('claude.ai 기준 남은 시간을 넣어주세요 (예: 1:46 또는 106)', '');
+      if (raw == null) return;
+      const s = raw.trim();
+      const m = /^(\d+)\s*:\s*(\d{1,2})$/.exec(s);
+      const mins = m ? Number(m[1]) * 60 + Number(m[2]) : Number(s);
+      if (!Number.isFinite(mins) || mins <= 0 || mins > 300) { alert('0~300분 사이로 넣어주세요. 예: 1:46'); return; }
+      ccSetEnd(Date.now() + mins * 60_000);
+      ccRender();
+    });
+
+    ccRender();
+    setInterval(ccRender, 1000);
+  }
+
+  /* ---------- Usage tracking ---------- */
+
+  function usageRender() {
+    if (!usageChip) return;
+    usageChip.querySelector('.u-value').textContent = `$${usageState.totalCostUsd.toFixed(2)}`;
+    $('#up-total').textContent = `$${usageState.totalCostUsd.toFixed(2)}`;
+    $('#up-session').textContent = `$${usageState.sessionCostUsd.toFixed(2)}`;
+
+    if (usageState.lastUpdatedAt) {
+      const d = new Date(usageState.lastUpdatedAt);
+      $('#up-note').textContent = `마지막 업데이트: ${d.toLocaleString('ko-KR')}`;
+    }
+  }
+
+  if (usageChip) {
+    const usageClose = () => { usageWrap.classList.remove('open'); usageChip.setAttribute('aria-expanded', 'false'); };
+    usageChip.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const open = usageWrap.classList.toggle('open');
+      usageChip.setAttribute('aria-expanded', String(open));
+      if (open) usageInput.focus();
+    });
+    usageWrap.addEventListener('mouseenter', () => { usageWrap.classList.add('open'); });
+    usageWrap.addEventListener('mouseleave', () => { if (document.activeElement !== usageChip) usageClose(); });
+    usagePop.addEventListener('click', (e) => e.stopPropagation());
+
+    usageSaveBtn.addEventListener('click', async () => {
+      const val = parseFloat(usageInput.value);
+      if (!Number.isFinite(val) || val < 0) {
+        alert('올바른 숫자를 입력해주세요.');
+        return;
+      }
+      try {
+        const r = await fetch('/api/usage', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ totalCostUsd: val }),
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
+        usageState = data;
+        usageRender();
+        usageClose();
+      } catch (e) {
+        alert(`업데이트 실패: ${e.message}`);
+      }
+    });
+
+    document.addEventListener('click', usageClose);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') usageClose(); });
+
+    usageRender();
+  }
 
   /* ---------- Theme toggle (per-device localStorage) ---------- */
 
