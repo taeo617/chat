@@ -168,11 +168,13 @@ cleanupOldAttachments();
 async function fetchClaudeUsage() {
   let browser = null;
   try {
+    console.log('[usage-scrape] 시작: claude.ai/account/usage 접근 중...');
     browser = await chromium.launch({ headless: true });
     const context = await browser.createBrowserContext();
     const page = await context.newPage();
 
     /* Navigate to usage page */
+    console.log('[usage-scrape] 페이지 로드 중...');
     await page.goto('https://claude.ai/account/usage', { waitUntil: 'networkidle', timeout: 30000 });
 
     /* Wait for the usage data to load */
@@ -181,6 +183,8 @@ async function fetchClaudeUsage() {
     /* Extract usage data */
     const data = await page.evaluate(() => {
       const textContent = document.body.innerText;
+      console.log('[page-eval] 페이지 텍스트 길이:', textContent.length);
+
       let totalCostUsd = 0;
       let usagePercent = 0;
 
@@ -191,18 +195,22 @@ async function fetchClaudeUsage() {
       /* Look for usage percentage - 현재 세션 기준 */
       /* Pattern: "75% 사용됨" 또는 "75% 사용" */
       const percentMatches = textContent.match(/(\d+)%\s*사용/g);
+      console.log('[page-eval] 찾은 퍼센트 매칭:', percentMatches);
+
       if (percentMatches && percentMatches.length > 0) {
         /* 첫 번째 퍼센트가 현재 세션 사용량 (주간 사용량 전) */
         const match = percentMatches[0].match(/(\d+)%/);
         if (match) usagePercent = parseInt(match[1]);
+        console.log('[page-eval] 추출된 퍼센트:', usagePercent);
       }
 
-      return { totalCostUsd, usagePercent, timestamp: Date.now() };
+      return { totalCostUsd, usagePercent, timestamp: Date.now(), textSample: textContent.substring(0, 500) };
     });
 
+    console.log('[usage-scrape] 결과:', data);
     return data;
   } catch (e) {
-    console.error('[usage-scrape] error:', e.message);
+    console.error('[usage-scrape] 오류:', e.message, e.stack);
     return null;
   } finally {
     if (browser) await browser.close();
