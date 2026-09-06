@@ -165,12 +165,21 @@ cleanupOldAttachments();
 
 /* ---------- Usage scraping from claude.ai ---------- */
 
+const AUTH_FILE = join(ROOT, '.auth', 'claude-session.json');
+
 async function fetchClaudeUsage() {
   let browser = null;
   try {
+    /* Check if we have a saved login session */
+    const hasAuth = await stat(AUTH_FILE).then(() => true).catch(() => false);
+    if (!hasAuth) {
+      console.log('[usage-scrape] 로그인 세션 없음. node setup-usage-auth.mjs 를 먼저 실행하세요.');
+      return { error: 'no_auth', totalCostUsd: 0, usagePercent: 0 };
+    }
+
     console.log('[usage-scrape] 시작: claude.ai/account/usage 접근 중...');
     browser = await chromium.launch({ headless: true });
-    const context = await browser.createBrowserContext();
+    const context = await browser.createBrowserContext({ storageState: AUTH_FILE });
     const page = await context.newPage();
 
     /* Navigate to usage page */
